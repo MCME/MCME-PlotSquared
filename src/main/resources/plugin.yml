@@ -1,0 +1,10 @@
+name: MCMEPlotSquared
+main: com.mcmiddleearth.plotsquared.MCMEP2
+version: 1.0.1
+authors: [barteldvn]
+api-version: 1.18
+depend: [ PlotSquared, PluginUtils]
+
+commands:
+  reviewParty:
+    description: "Made things"
