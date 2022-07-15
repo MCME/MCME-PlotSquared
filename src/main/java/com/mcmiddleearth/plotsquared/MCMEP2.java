@@ -3,13 +3,13 @@ package com.mcmiddleearth.plotsquared;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.mcmiddleearth.plotsquared.command.ReviewPartyStart;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.plotsquared.core.PlotAPI;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import com.mcmiddleearth.plotsquared.plotflag.ReviewFlag;
 
 import java.io.File;
 
