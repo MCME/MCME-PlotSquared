@@ -1,23 +1,20 @@
 package com.mcmiddleearth.plotsquared.plotflag;
 
+import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.plot.flag.FlagParseException;
-import com.plotsquared.core.plot.flag.PlotFlag;
 import com.plotsquared.core.plot.flag.types.ListFlag;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import com.plotsquared.core.plot.flag.types.BooleanFlag;
-import com.plotsquared.core.configuration.caption.TranslatableCaption;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
 
 
-public class ReviewDataFlag extends ListFlag<Integer, ReviewDataFlag> {
+public class ReviewDataFlag extends ListFlag<Long, ReviewDataFlag> {
 
     public static final ReviewDataFlag REVIEW_DATA_FLAG_NONE =
             new ReviewDataFlag(Collections.emptyList());
 
-    protected ReviewDataFlag(List<Integer> valueList) {
+    protected ReviewDataFlag(List<Long> valueList) {
         super(valueList, TranslatableCaption.of("flags.flag_category_string_list"),
                 TranslatableCaption.of("flags.flag_description_blocked_cmds")
         ); //eeeeuh implement perhaps or ignore cause this don't matter
@@ -34,7 +31,7 @@ public class ReviewDataFlag extends ListFlag<Integer, ReviewDataFlag> {
     }
 
     @Override
-    protected ReviewDataFlag flagOf(@NonNull List<Integer> value) {
+    protected ReviewDataFlag flagOf(@NonNull List<Long> value) {
         return new ReviewDataFlag(value);
 
     }

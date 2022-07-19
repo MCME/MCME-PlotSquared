@@ -3,16 +3,17 @@ package com.mcmiddleearth.plotsquared.review;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotId;
 import org.bukkit.entity.Player;
+
 import java.util.HashMap;
 import java.util.UUID;
 
 public class ReviewAPI {
-    private static HashMap<UUID, ReviewPlayer> reviewers = new HashMap<>();
+    private static HashMap<UUID, ReviewPlayer> reviewerPlayers = new HashMap<>();
     private static HashMap<UUID, ReviewParty> reviewParties = new HashMap<>();
-    private static HashMap<PlotId, Plot> currentPlots = new HashMap<>();
+    private static HashMap<PlotId, ReviewPlot> reviewPlots = new HashMap<>();
 
-    public static HashMap<UUID, ReviewPlayer> getReviewers() {
-        return reviewers;
+    public static HashMap<UUID, ReviewPlayer> getReviewerPlayers() {
+        return reviewerPlayers;
     }
 
     public static HashMap<UUID, ReviewParty> getReviewParties() {
@@ -20,7 +21,7 @@ public class ReviewAPI {
     }
 
     public static void addReviewPlayer(ReviewPlayer reviewPlayer) {
-        reviewers.put(reviewPlayer.getUniqueId(), reviewPlayer);
+        reviewerPlayers.put(reviewPlayer.getUniqueId(), reviewPlayer);
     }
 
     public static void addReviewParty(ReviewParty reviewParty) {
@@ -28,24 +29,37 @@ public class ReviewAPI {
     }
 
     public static void removeReviewPlayer(ReviewPlayer reviewPlayer) {
-        reviewers.remove(reviewPlayer.getUniqueId(), reviewPlayer);
+        reviewerPlayers.remove(reviewPlayer.getUniqueId(), reviewPlayer);
     }
 
     public static void removeReviewParty(ReviewParty reviewParty) {
         reviewParties.remove(reviewParty.getReviewerLeader().getUniqueId(), reviewParty);
     }
 
-    public static boolean isReviewing(Player player) { return reviewers.containsKey(player.getUniqueId()); }
-
     public static ReviewPlayer getReviewPlayer(Player player){
-        return reviewers.get(player.getUniqueId());
+        if (reviewerPlayers.containsKey(player.getUniqueId())){
+                return reviewerPlayers.get(player.getUniqueId());
+        }
+        else return new ReviewPlayer(player);
     }
 
     public static boolean isReviewPlayer(Player player){
-        return reviewers.containsKey(player.getUniqueId());
+        return reviewerPlayers.containsKey(player.getUniqueId());
     }
 
-    public static HashMap<PlotId, Plot> getCurrentPlots() {
-        return currentPlots;
+    public static boolean isReviewPlot(Plot plot){
+        return reviewerPlayers.containsKey(plot.getId());
+    }
+
+
+    public static ReviewPlot getReviewPlot(Plot plot){
+        if (reviewPlots.containsKey(plot.getId())){
+            return reviewPlots.get(plot.getId());
+        }
+        else return new ReviewPlot(plot);
+    }
+
+    public static Object[] getReviewPlots() {
+        return reviewPlots.values().toArray();
     }
 }

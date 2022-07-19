@@ -1,8 +1,9 @@
 package com.mcmiddleearth.plotsquared.review;
 
-import com.plotsquared.core.configuration.caption.TranslatableCaption;
-import com.plotsquared.core.events.TeleportCause;
 import com.plotsquared.core.plot.Plot;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -24,71 +25,68 @@ public class ReviewParty {
     public ReviewParty(UUID id, ReviewPlayer leader){
         this.ID = id;
         this.LEADER = leader;
+        this.partyReviewPlayers.add(leader);
     }
 
     public static ReviewParty startReviewParty(Player player){
-        ReviewPlayer partyLeader = new ReviewPlayer(player);
-        ReviewParty reviewParty = new ReviewParty(partyLeader.getUniqueId(), partyLeader);
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+        ReviewParty reviewParty = new ReviewParty(reviewPlayer.getUniqueId(), reviewPlayer);
         ReviewAPI.addReviewParty(reviewParty);
-        partyLeader.setParty(reviewParty);
+        ReviewAPI.addReviewPlayer(reviewPlayer);
+        reviewPlayer.setReviewParty(reviewParty);
         return reviewParty;
     }
 
-    public int addPlayerToParty(Player player){
-        //Can't add to party because he's already reviewing
-        if(ReviewAPI.getReviewers().containsKey(player.getUniqueId())){
-            return 1;
-        }
-        ReviewPlayer reviewPlayer = new ReviewPlayer(player);
+    public void addReviewPlayerToParty(ReviewPlayer reviewPlayer){
         ReviewAPI.addReviewPlayer(reviewPlayer);
         this.addToParty(reviewPlayer);
-        return 0;
     }
 
-    public int removePlayerFromParty(Player player){
-        //can't remove yourself
-        if(this.getReviewerLeader().getUniqueId() == player.getUniqueId()){
-            return 1;
+    public void removeReviewPlayer(ReviewPlayer reviewPlayer){
+        if(reviewPlayer.isReviewPartyLeader()){
+            this.stopParty();
+            return;
         }
-        //Can't remove from party because he's not reviewing
-        if(!ReviewAPI.isReviewPlayer(player)){
-            return 2;
-        }
-        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        //isn't in your review party
-        if(!this.containsReviewer(reviewPlayer)) {
-            return 3;
-        }
-        this.removeFromParty(reviewPlayer);
+        reviewPlayer.clearRating();
+        reviewPlayer.clearFeedback();
+        partyReviewPlayers.remove(reviewPlayer);
         ReviewAPI.removeReviewPlayer(reviewPlayer);
-        return 0;
+        reviewPlayer.setReviewParty(null);
     }
 
-    public int stopParty(){
+    public void stopParty(){
         for (ReviewPlayer i : this.getAllReviewers()){
             ReviewAPI.removeReviewPlayer(i);
         }
         ReviewAPI.removeReviewParty(this);
-        //somehow handle all plots that were waiting for this party instance to be reviewed, but never got reviewed, to be properly reviewed (and not forgotten)
-        return 0;
+
+        //go over all remaining plots in the linked list
+//        for (Plot i : plotLinkedList){
+//            for (ReviewParty j : ReviewAPI.getReviewParties().values()){
+//                if(!j.getPlotLinkedList().contains(i)){
+//                    ReviewPlot reviewPlot = new ReviewPlot(i);
+//                    reviewPlot.preemptPlotReview(this);
+//                }
+//            }
+//        }
+        for (Plot i : plotLinkedList) {
+            ReviewPlot reviewPlot = new ReviewPlot(i);
+            reviewPlot.preemptPlotReview(this);
+        }
     }
 
     public void goNextPlot(){
-        if(!this.hasGivenFeedback()) return;
-        if(!this.hasGivenRating()) return;
         Plot currentPlot = this.plotLinkedList.pop();
         ReviewPlot currentReviewPlot = new ReviewPlot(currentPlot);
-        currentReviewPlot.endPlotReview(this);
-        //
-        //!!!!implement adding rating and feedback to plot!!!!
-        //
+
+        currentReviewPlot.endPlotReview(this); // IMPORTANT METHOD
 
         Plot nextPlot = this.plotLinkedList.getFirst();
-        if (nextPlot == null) return; //no new plot right now, ask if done reviewing?
-
         for (ReviewPlayer i : this.getAllReviewers()){
-            nextPlot.teleportPlayer(i.getPLOTPLAYER(), TeleportCause.PLUGIN, result -> {
-            });
+            World world = Bukkit.getWorlds().get(1);
+            Bukkit.getPlayer(i.getUniqueId()).teleport(new Location(Bukkit.getWorld(nextPlot.getWorldName()), nextPlot.getPosition().getX(), nextPlot.getPosition().getY(), nextPlot.getPosition().getZ(), nextPlot.getPosition().getYaw(),nextPlot.getPosition().getPitch()));
+//            nextPlot.teleportPlayer(i.getPLOTPLAYER(), TeleportCause.PLUGIN, result -> {
+//            });
         }
     }
 
@@ -97,7 +95,6 @@ public class ReviewParty {
         for(ReviewPlayer i : partyReviewPlayers){
             if(!i.hasGivenFeedback()){
                 result = false;
-                i.getPLOTPLAYER().sendMessage(TranslatableCaption.of("give_feedback")); //implement message
             }
         }
         return result;
@@ -108,24 +105,21 @@ public class ReviewParty {
         for(ReviewPlayer i : partyReviewPlayers){
             if(!i.hasGivenRating()){
                 result = false;
-                i.getPLOTPLAYER().sendMessage(TranslatableCaption.of("give_rating")); //implement message
             }
         }
         return result;
     }
 
-    public Plot getCurrentPlot(){ return plotLinkedList.getFirst(); }
+    public Plot getNextPlot(){
+        return this.plotLinkedList.get(1);
+    }
+
+    public Plot getCurrentPlot(){
+        return plotLinkedList.getFirst();
+    }
 
     public ReviewPlayer getReviewerLeader(){
         return LEADER;
-    }
-
-    public void addToParty(ReviewPlayer player){
-        partyReviewPlayers.add(player);
-    }
-
-    public void removeFromParty(ReviewPlayer player){
-        partyReviewPlayers.remove(player);
     }
 
     public boolean containsReviewer(ReviewPlayer reviewPlayer) {
@@ -136,10 +130,23 @@ public class ReviewParty {
         return partyReviewPlayers;
     }
 
-    public ArrayList<Integer> getPlotRatings(){ return plotRatings; }
+    public ArrayList<String> getFeedbacks() {
+        return plotFeedbacks;
+    }
+
+    public ArrayList<Integer> getPlotRatings(){
+        return plotRatings;
+    }
 
     public LinkedList<Plot> getPlotLinkedList(){
         return plotLinkedList;
     }
 
+    private void addToParty(ReviewPlayer player){
+        partyReviewPlayers.add(player);
+    }
+
+    public UUID getId() {
+        return getReviewerLeader().getUniqueId();
+    }
 }

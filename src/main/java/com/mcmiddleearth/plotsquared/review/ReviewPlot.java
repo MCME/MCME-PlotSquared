@@ -2,9 +2,11 @@ package com.mcmiddleearth.plotsquared.review;
 
 import com.mcmiddleearth.plotsquared.MCMEP2;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewDataFlag;
-import com.mcmiddleearth.plotsquared.plotflag.ReviewFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotId;
+import com.plotsquared.core.plot.flag.PlotFlag;
+import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,8 +19,9 @@ public class ReviewPlot {
     private PlotId plotId;
     private HashMap<java.util.UUID, Integer> playerReviewAmount;
     private ArrayList<Integer> plotTempRatings;
-    private ArrayList<Integer> plotFinalRatings;
-    private ArrayList<Integer> plotFinalReviewTimes;
+    private ArrayList<String> plotFinalFeedback;
+    private ArrayList<Long> plotFinalRatings;
+    private ArrayList<Long> plotFinalReviewTimeStamps;
 
 
     public ReviewPlot(Plot plot){
@@ -31,59 +34,97 @@ public class ReviewPlot {
             playerReviewAmount = loadReviewPlotData(plot).playerReviewAmount;
             plotTempRatings = loadReviewPlotData(plot).plotTempRatings;
             plotFinalRatings = loadReviewPlotData(plot).plotFinalRatings;
-            plotFinalReviewTimes = loadReviewPlotData(plot).plotFinalReviewTimes;
+            plotFinalReviewTimeStamps = loadReviewPlotData(plot).plotFinalReviewTimeStamps;
     }
 
-    private enum ReviewStatus{
+    public enum ReviewStatus{
+        BEING_REVIEWED,
+        NOT_BEING_REVIEWED,
         ACCEPTED,
         REJECTED,
-        TOOEARLY,
-        BEINGREVIEWED
+        LOCKED,
+        TOO_EARLY
+
     }
 
     public void endPlotReview(ReviewParty reviewParty) {
+        addFeedback(reviewParty.getFeedbacks());
         addTempRatings(reviewParty.getPlotRatings());
         setPlayerReviewAmounts(reviewParty.getAllReviewers());
 
         ReviewStatus reviewStatus = getReviewStatus();
+        Plot plot = getPlot();
         switch(reviewStatus){
-            case BEINGREVIEWED:
+            case BEING_REVIEWED:
                 //someone is still reviewing this plot lets handle it after everyone is done.
-                return;
-            case TOOEARLY:
+            case TOO_EARLY:
                 //save file with no conclusion, review process continues.
                 this.saveReviewPlotData();
-                return;
             case REJECTED:
                 //save file with fail
                 this.saveReviewPlotData();
                 //set reviewFlag to false (end review process)
-                this.getPlot().setFlag(ReviewFlag.REVIEW_FALSE);
-                return;
+                this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
+                this.plotTempRatings.clear();
             case ACCEPTED:
-                Plot plot = getPlot();
-                plot.setFlag(ReviewFlag.REVIEW_FALSE);
+                //save data to flag and delete misc data from disk
                 plot.getFlag(ReviewDataFlag.class).addAll(preparedReviewData());
-                //notify player they can do /plot done to finish and get new plot
                 deleteReviewPlotData();
-                return;
+                //set plot to done
+                long flagValue = System.currentTimeMillis() / 1000;
+                PlotFlag<?, ?> plotFlag = plot.getFlagContainer().getFlag(DoneFlag.class)
+                        .createFlagInstance(Long.toString(flagValue));
+                plot.setFlag(plotFlag);
+                //set plot to ACCEPTED
+                plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
+                this.plotTempRatings.clear();
         }
     }
 
-    private List<Integer> preparedReviewData() {
-        List<Integer> reviewDataList = new ArrayList<>();
+    public void preemptPlotReview(ReviewParty reviewParty) {
+        ReviewStatus reviewStatus = getReviewStatus();
+        Plot plot = getPlot();
+        switch(reviewStatus){
+            case BEING_REVIEWED:
+                //someone is still reviewing this plot lets handle it after everyone is done.
+            case TOO_EARLY:
+                //save file with no conclusion, review process continues.
+                this.saveReviewPlotData();
+            case REJECTED:
+                //save file with fail
+                this.saveReviewPlotData();
+                //set reviewFlag to false (end review process)
+                this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
+                this.plotTempRatings.clear();
+            case ACCEPTED:
+                //save data to flag and delete misc data from disk
+                plot.getFlag(ReviewDataFlag.class).addAll(preparedReviewData());
+                deleteReviewPlotData();
+                //set plot to done
+                long flagValue = System.currentTimeMillis() / 1000;
+                PlotFlag<?, ?> plotFlag = plot.getFlagContainer().getFlag(DoneFlag.class)
+                        .createFlagInstance(Long.toString(flagValue));
+                plot.setFlag(plotFlag);
+                //set plot to ACCEPTED
+                plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
+                this.plotTempRatings.clear();
+        }
+    }
+
+    private List<Long> preparedReviewData() {
+        List<Long> reviewDataList = new ArrayList<>();
         reviewDataList.addAll(plotFinalRatings);
-        reviewDataList.addAll(plotFinalReviewTimes);
+        reviewDataList.addAll(plotFinalReviewTimeStamps);
         return reviewDataList;
     }
 
-    private ReviewStatus getReviewStatus() {
+    public ReviewStatus getReviewStatus() {
         for (ReviewParty i : ReviewAPI.getReviewParties().values()){
-            if(i.getPlotLinkedList().contains(this.getPlot())) return ReviewStatus.BEINGREVIEWED;
+            if(i.getPlotLinkedList().contains(this.getPlot())) return ReviewStatus.BEING_REVIEWED;
         }
         if(passedTimeThreshold() && passedRatingThreshold()) return ReviewStatus.ACCEPTED;
-        else if(!passedTimeThreshold()) return ReviewStatus.TOOEARLY;
-        else return ReviewStatus.REJECTED;
+        if(!passedTimeThreshold()) return ReviewStatus.TOO_EARLY;
+        return ReviewStatus.REJECTED;
     }
 
     /**
@@ -93,7 +134,7 @@ public class ReviewPlot {
     private boolean passedTimeThreshold() {
         if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot
         final int DAYINSECONDS = 86400;
-        return plotFinalReviewTimes.get(plotFinalReviewTimes.size() - 1) <= ((System.currentTimeMillis() / 1000) - DAYINSECONDS);
+        return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1) <= ((System.currentTimeMillis() / 1000) - DAYINSECONDS);
     }
 
     /**
@@ -122,6 +163,15 @@ public class ReviewPlot {
     public void addTempRatings(ArrayList<Integer> ratingList){
         plotTempRatings.addAll(ratingList);
     }
+
+    /**
+     * Adds feedbacks of reviewPlayers in reviewParty to array;
+     * @param feedbackList list of feedbacks in reviewParty;
+     */
+    public void addFeedback(ArrayList<String> feedbackList) {
+        plotFinalFeedback.addAll(feedbackList);
+    }
+
 
     /**
      * Sets the amount of times a player has reviewed this plot
@@ -175,7 +225,12 @@ public class ReviewPlot {
     }
 
     public Plot getPlot() {
-         return ReviewAPI.getCurrentPlots().get(plotId);
+        return MCMEP2.getPlotArea().getPlot(plotId);
+    }
+
+    public long getTimeSinceLastReview(){
+        if(this.plotFinalReviewTimeStamps.isEmpty()) return System.currentTimeMillis() / 1000;
+        else return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1);
     }
 
     public PlotId getId() { return plotId; }
