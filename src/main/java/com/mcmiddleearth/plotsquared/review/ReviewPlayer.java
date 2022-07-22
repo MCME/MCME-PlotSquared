@@ -1,5 +1,8 @@
 package com.mcmiddleearth.plotsquared.review;
 
+import com.plotsquared.bukkit.util.BukkitUtil;
+import com.plotsquared.core.player.PlotPlayer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -8,14 +11,12 @@ import java.util.UUID;
  * A reviewPlayer is a container for reviewer data related to a single player.
  */
 public class ReviewPlayer {
-//    private final PlotPlayer<?> PLOTPLAYER;
     private final UUID PLAYERUUID;
     private ReviewParty reviewParty;
-    private String feedback;
-    private Integer rating;
+    private String plotFeedback;
+    private Integer plotRating;
 
     public ReviewPlayer(Player player){
-//        this.PLOTPLAYER = MCMEP2.getPlotAPI().wrapPlayer(player.getUniqueId());
         this.PLAYERUUID = player.getUniqueId();
     }
 
@@ -25,20 +26,26 @@ public class ReviewPlayer {
 
     public boolean isReviewPartyLeader(){ return reviewParty.getReviewerLeader().getUniqueId() == PLAYERUUID; }
 
-    public void setRating(int rating){
-        this.rating = rating;
+    public boolean hasAlreadyRated(ReviewPlot reviewPlot){
+        int playerReviewIteration = reviewPlot.getPlayerReviewIteration(this);
+        int reviewIteration = reviewPlot.getReviewIteration();
+        return playerReviewIteration >= reviewIteration || playerReviewIteration == 0;
     }
 
-    public void setFeedback(String feedback){
-        this.feedback = feedback;
+    public void setPlotRating(Integer plotRating){
+        this.plotRating = plotRating;
+    }
+
+    public void setPlotFeedback(String plotFeedback){
+        this.plotFeedback = plotFeedback;
     }
 
     public void clearFeedback(){
-        this.feedback = null;
+        this.plotFeedback = null;
     }
 
     public void clearRating(){
-        this.rating = null;
+        this.plotRating = null;
     }
 
     public void setReviewParty(ReviewParty reviewParty){
@@ -51,19 +58,43 @@ public class ReviewPlayer {
 
     public ReviewParty getReviewParty() {return reviewParty;};
 
-//    public PlotPlayer<?> getPLOTPLAYER(){
-//        return PLOTPLAYER;
-//    }
+    public Player getBukkitPlayer(){
+        return Bukkit.getPlayer(this.getUniqueId());
+    }
+
+    public PlotPlayer<?> getPlotPlayer(){
+        return BukkitUtil.adapt(getBukkitPlayer());
+    }
 
     public boolean hasGivenFeedback(){
-        return feedback == null;
+        if (plotFeedback != null)
+            return true;
+        if(hasAlreadyRated(this.getReviewParty().getCurrentReviewPlot()))
+            return true;
+        else return false;
     }
 
     public boolean hasGivenRating(){
-        return rating == null;
+        if (plotRating != null)
+            return true;
+        if(hasAlreadyRated(this.getReviewParty().getCurrentReviewPlot()))
+            return true;
+        else return false;
     }
 
     public UUID getUniqueId() {
         return PLAYERUUID;
+    }
+
+    public void clearReviewParty() {
+        this.reviewParty = null;
+    }
+
+    public String getPlotFeedback() {
+        return plotFeedback;
+    }
+
+    public Integer getPlotRating() {
+        return plotRating;
     }
 }

@@ -4,6 +4,7 @@ import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotId;
 import org.bukkit.entity.Player;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -47,11 +48,6 @@ public class ReviewAPI {
         return reviewerPlayers.containsKey(player.getUniqueId());
     }
 
-    public static boolean isReviewPlot(Plot plot){
-        return reviewerPlayers.containsKey(plot.getId());
-    }
-
-
     public static ReviewPlot getReviewPlot(Plot plot){
         if (reviewPlots.containsKey(plot.getId())){
             return reviewPlots.get(plot.getId());
@@ -59,7 +55,15 @@ public class ReviewAPI {
         else return new ReviewPlot(plot);
     }
 
-    public static Object[] getReviewPlots() {
-        return reviewPlots.values().toArray();
+    public static Collection<ReviewPlot> getReviewPlotsCollection() {
+        return reviewPlots.values();
+    }
+
+    public static void addReviewPlot(PlotId plotId, ReviewPlot reviewPlot) {
+        reviewPlots.put(plotId, reviewPlot);
+    }
+
+    public static void removeReviewPlot(ReviewPlot reviewPlot) {
+        reviewPlots.remove(reviewPlot.getId());
     }
 }

@@ -1,12 +1,9 @@
 package com.mcmiddleearth.plotsquared.review;
 
+import com.plotsquared.core.events.TeleportCause;
 import com.plotsquared.core.plot.Plot;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -18,14 +15,25 @@ public class ReviewParty {
     private final UUID ID;
     private final ReviewPlayer LEADER;
     private HashSet<ReviewPlayer> partyReviewPlayers = new HashSet<>();
-    private LinkedList<Plot> plotLinkedList;    //linked list of latest plots to be reviewed
-    private ArrayList<String> plotFeedbacks;
-    private ArrayList<Integer> plotRatings;
+    private LinkedList<ReviewPlot> reviewPlotLinkedList = new LinkedList<>();    //linked list of latest plots to be reviewed
+    private HashSet<String> plotFeedbacks = new HashSet<>();
+    private HashSet<Integer> plotRatings = new HashSet<>();
 
-    public ReviewParty(UUID id, ReviewPlayer leader){
+    public ReviewParty(UUID id, ReviewPlayer leader) {
         this.ID = id;
         this.LEADER = leader;
-        this.partyReviewPlayers.add(leader);
+        //add all reviewplots which the leader hasn't reviewed
+        for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()){
+            //getLogger().info(String.valueOf(reviewPlot.getPlayerReviewIteration(leader)) + String.valueOf(reviewPlot.getReviewIteration()));
+            if(!leader.hasAlreadyRated(reviewPlot)) {
+                //getLogger().info(String.valueOf(reviewPlot.getPlayerReviewIteration(leader)) + String.valueOf(reviewPlot.getReviewIteration()));
+                reviewPlotLinkedList.add(reviewPlot);
+            }
+            else return;
+        }
+        if(!reviewPlotLinkedList.isEmpty()){
+            addReviewPlayer(leader);
+        }
     }
 
     public static ReviewParty startReviewParty(Player player){
@@ -37,56 +45,60 @@ public class ReviewParty {
         return reviewParty;
     }
 
-    public void addReviewPlayerToParty(ReviewPlayer reviewPlayer){
-        ReviewAPI.addReviewPlayer(reviewPlayer);
-        this.addToParty(reviewPlayer);
-    }
-
-    public void removeReviewPlayer(ReviewPlayer reviewPlayer){
-        if(reviewPlayer.isReviewPartyLeader()){
-            this.stopParty();
-            return;
-        }
-        reviewPlayer.clearRating();
-        reviewPlayer.clearFeedback();
-        partyReviewPlayers.remove(reviewPlayer);
-        ReviewAPI.removeReviewPlayer(reviewPlayer);
-        reviewPlayer.setReviewParty(null);
-    }
-
     public void stopParty(){
         for (ReviewPlayer i : this.getAllReviewers()){
             ReviewAPI.removeReviewPlayer(i);
         }
+
         ReviewAPI.removeReviewParty(this);
 
-        //go over all remaining plots in the linked list
-//        for (Plot i : plotLinkedList){
-//            for (ReviewParty j : ReviewAPI.getReviewParties().values()){
-//                if(!j.getPlotLinkedList().contains(i)){
-//                    ReviewPlot reviewPlot = new ReviewPlot(i);
-//                    reviewPlot.preemptPlotReview(this);
-//                }
-//            }
-//        }
-        for (Plot i : plotLinkedList) {
-            ReviewPlot reviewPlot = new ReviewPlot(i);
-            reviewPlot.preemptPlotReview(this);
+        for (ReviewPlot i : reviewPlotLinkedList) {
+            i.preemptPlotReview(this);
         }
     }
 
     public void goNextPlot(){
-        Plot currentPlot = this.plotLinkedList.pop();
-        ReviewPlot currentReviewPlot = new ReviewPlot(currentPlot);
+        ReviewPlot currentReviewPlot = this.reviewPlotLinkedList.pop();
+        for (ReviewPlayer i : this.getAllReviewers()){
+            this.plotFeedbacks.add(i.getPlotFeedback());
+            this.plotRatings.add(i.getPlotRating());
+            i.clearRating();
+            i.clearFeedback();
+        }
 
         currentReviewPlot.endPlotReview(this); // IMPORTANT METHOD
 
-        Plot nextPlot = this.plotLinkedList.getFirst();
+        //check for any remaining plots
+        if(this.reviewPlotLinkedList.isEmpty()){
+            stopParty();
+            return;
+        }
+
+        ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
         for (ReviewPlayer i : this.getAllReviewers()){
-            World world = Bukkit.getWorlds().get(1);
-            Bukkit.getPlayer(i.getUniqueId()).teleport(new Location(Bukkit.getWorld(nextPlot.getWorldName()), nextPlot.getPosition().getX(), nextPlot.getPosition().getY(), nextPlot.getPosition().getZ(), nextPlot.getPosition().getYaw(),nextPlot.getPosition().getPitch()));
-//            nextPlot.teleportPlayer(i.getPLOTPLAYER(), TeleportCause.PLUGIN, result -> {
-//            });
+            nextPlot.getPlot().teleportPlayer(i.getPlotPlayer(), TeleportCause.PLUGIN, result -> {
+            });
+        }
+    }
+
+    public void addReviewPlayer(ReviewPlayer reviewPlayer){
+        ReviewAPI.addReviewPlayer(reviewPlayer);
+        this.partyReviewPlayers.add(reviewPlayer);
+        reviewPlayer.setReviewParty(this);
+
+        getCurrentPlot().teleportPlayer(reviewPlayer.getPlotPlayer(), TeleportCause.PLUGIN, result -> {
+        });
+    }
+
+    public void removeReviewPlayer(ReviewPlayer reviewPlayer){
+        ReviewAPI.removeReviewPlayer(reviewPlayer);
+        this.partyReviewPlayers.remove(reviewPlayer);
+        reviewPlayer.clearRating();
+        reviewPlayer.clearFeedback();
+        reviewPlayer.clearReviewParty();
+
+        if(reviewPlayer.isReviewPartyLeader()){
+            this.stopParty();
         }
     }
 
@@ -110,12 +122,17 @@ public class ReviewParty {
         return result;
     }
 
-    public Plot getNextPlot(){
-        return this.plotLinkedList.get(1);
+    public ReviewPlot getNextReviewPlot(){
+        if(reviewPlotLinkedList.size() == 1) return null;
+        return this.reviewPlotLinkedList.get(1);
+    }
+
+    public ReviewPlot getCurrentReviewPlot(){
+        return reviewPlotLinkedList.getFirst();
     }
 
     public Plot getCurrentPlot(){
-        return plotLinkedList.getFirst();
+        return reviewPlotLinkedList.getFirst().getPlot();
     }
 
     public ReviewPlayer getReviewerLeader(){
@@ -130,20 +147,16 @@ public class ReviewParty {
         return partyReviewPlayers;
     }
 
-    public ArrayList<String> getFeedbacks() {
+    public HashSet<String> getFeedbacks() {
         return plotFeedbacks;
     }
 
-    public ArrayList<Integer> getPlotRatings(){
+    public HashSet<Integer> getPlotRatings(){
         return plotRatings;
     }
 
-    public LinkedList<Plot> getPlotLinkedList(){
-        return plotLinkedList;
-    }
-
-    private void addToParty(ReviewPlayer player){
-        partyReviewPlayers.add(player);
+    public LinkedList<ReviewPlot> getReviewPlotLinkedList(){
+        return reviewPlotLinkedList;
     }
 
     public UUID getId() {

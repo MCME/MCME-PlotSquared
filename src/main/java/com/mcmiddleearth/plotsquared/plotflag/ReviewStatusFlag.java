@@ -14,9 +14,6 @@ public class ReviewStatusFlag extends PlotFlag<ReviewPlot.ReviewStatus, ReviewSt
     public static final ReviewStatusFlag ACCEPTED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.ACCEPTED);
     public static final ReviewStatusFlag REJECTED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.REJECTED);
     public static final ReviewStatusFlag LOCKED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.LOCKED);
-//    static {
-//        ReviewPlot.ReviewStatus.register(DEFAULT);
-//    }
 
     @Override
     protected ReviewStatusFlag flagOf(ReviewPlot.@NonNull ReviewStatus value) {

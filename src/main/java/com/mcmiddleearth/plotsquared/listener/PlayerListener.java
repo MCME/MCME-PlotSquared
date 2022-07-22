@@ -5,6 +5,7 @@ import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
+import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
 import org.bukkit.Bukkit;
@@ -18,7 +19,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent playerJoinEvent){
-        PlotPlayer<?> plotPlayer = MCMEP2.getPlotAPI().wrapPlayer(playerJoinEvent.getPlayer().getUniqueId());
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(playerJoinEvent.getPlayer());
         ReviewStatusFlag reviewStatus = ReviewStatusFlag.BEING_REVIEWED_FLAG;
         for (Plot i : plotPlayer.getPlots()){
             switch (i.getFlag(reviewStatus)){

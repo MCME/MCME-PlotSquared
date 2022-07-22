@@ -1,15 +1,18 @@
 package com.mcmiddleearth.plotsquared.command;
 
-import com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
+import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.player.PlotPlayer;
 import me.gleeming.command.Command;
 import me.gleeming.command.paramter.Param;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
+import java.util.UUID;
 
 public class ReviewCommands {
 
@@ -19,6 +22,16 @@ public class ReviewCommands {
         if(reviewPlayer.isReviewing()) {
             player.sendMessage("You're already reviewing!");
             return;
+        }
+        if(ReviewAPI.getReviewPlotsCollection().isEmpty()) {
+            player.sendMessage("No plots to review");
+            return;
+        }
+        for(ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()) {
+            if(reviewPlayer.hasAlreadyRated(reviewPlot)) {
+                player.sendMessage("You've already reviewed all plots to review");
+                return;
+            }
         }
         ReviewParty.startReviewParty(player);
         player.sendMessage("You're now reviewing!");
@@ -69,7 +82,7 @@ public class ReviewCommands {
             return;
         }
         if(reviewTarget.isReviewing()) {
-            reviewTarget.getReviewParty().addReviewPlayerToParty(reviewPlayer);
+            reviewTarget.getReviewParty().addReviewPlayer(reviewPlayer);
             player.sendMessage("joined reviewparty");
         }
     }
@@ -129,7 +142,11 @@ public class ReviewCommands {
             player.sendMessage("You're not the reviewparty leader");
             return;
         }
-        if(reviewPlayer.getReviewParty().getNextPlot() == null){
+        if(!(reviewPlayer.getReviewParty().hasGivenFeedback() && reviewPlayer.getReviewParty().hasGivenRating())){
+            player.sendMessage("Not everyone is finished reviewing");
+            return;
+        }
+        if(reviewPlayer.getReviewParty().getNextReviewPlot() == null){
             player.sendMessage("No plots left to review. Ending review party");
             reviewPlayer.getReviewParty().stopParty();
             return;
@@ -139,7 +156,7 @@ public class ReviewCommands {
     }
 
     @Command(names = {"review rate"}, playerOnly = true)
-    public void rate(Player player, @Param(name = "number") int rating) {
+    public void reviewRate(Player player, @Param(name = "number") int rating) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if(!reviewPlayer.isReviewing()){
             player.sendMessage("You're not reviewing!");
@@ -147,6 +164,10 @@ public class ReviewCommands {
         }
         if(reviewPlayer.getReviewParty().getCurrentPlot().isOwner(player.getUniqueId())){
             player.sendMessage("Can't rate your own plot!");
+            return;
+        }
+        if(reviewPlayer.hasAlreadyRated(reviewPlayer.getReviewParty().getCurrentReviewPlot())){
+            player.sendMessage("You've already submitted a rating for this plot");
             return;
         }
         if(!reviewPlayer.hasGivenFeedback()){
@@ -159,11 +180,11 @@ public class ReviewCommands {
         }
 
         if(reviewPlayer.hasGivenRating()){
-            reviewPlayer.setRating(rating);
+            reviewPlayer.setPlotRating(rating);
             player.sendMessage("Updated rating");
             return;
         }
-        reviewPlayer.setRating(rating);
+        reviewPlayer.setPlotRating(rating);
         player.sendMessage("Given rating");
         if(reviewPlayer.getReviewParty().hasGivenRating() && reviewPlayer.getReviewParty().hasGivenFeedback()){
             reviewPlayer.getReviewParty().goNextPlot();
@@ -175,7 +196,7 @@ public class ReviewCommands {
     }
 
     @Command(names = {"review feedback"}, playerOnly = true)
-    public void feedback(Player player, @Param(name = "message") String feedback) {
+    public void reviewFeedback(Player player, @Param(name = "message") String feedback) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if(!reviewPlayer.isReviewing()){
             player.sendMessage("You're not reviewing!");
@@ -185,26 +206,63 @@ public class ReviewCommands {
             player.sendMessage("Can't give feedback to your own plot!");
             return;
         }
+        if(reviewPlayer.hasAlreadyRated(reviewPlayer.getReviewParty().getCurrentReviewPlot())){
+            player.sendMessage("You've already submitted a rating for this plot");
+            return;
+        }
         if(reviewPlayer.hasGivenFeedback()){
-            reviewPlayer.setFeedback(feedback);
+            reviewPlayer.setPlotFeedback(feedback);
             player.sendMessage("Updated feedback");
             return;
         }
-        reviewPlayer.setFeedback(feedback);
+        reviewPlayer.setPlotFeedback(feedback);
         player.sendMessage("Given feedback, now give rating");
     }
 
-    @Command(names = {"review check", "plot check"}, playerOnly = true)
-    public void checkRating(Player player) {
-        PlotPlayer<?> plotPlayer = MCMEP2.getPlotAPI().wrapPlayer(player.getUniqueId());
+    @Command(names = {"review submit"}, playerOnly = true)
+    public void submitForRating(Player player) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         if (plotPlayer.getCurrentPlot() == null){
             player.sendMessage("You're not in a plot!");
             return;
         }
-        ReviewPlot reviewPlot = ReviewPlot.loadReviewPlotData(plotPlayer.getCurrentPlot());
-        reviewPlot.getReviewStatus(); //euh do more stuff and make pretty
-        player.sendMessage("");
+        player.performCommand("plot done");
+    }
 
-        //set feedback
+    @Command(names = {"review check"}, playerOnly = true)
+    public void checkRating(Player player) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        if (plotPlayer.getCurrentPlot() == null){
+            player.sendMessage("You're not in a plot!");
+            return;
+        }
+        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plotPlayer.getCurrentPlot());
+
+        player.sendMessage("Review Status");
+        player.sendMessage(reviewPlot.getPlot().getFlag(ReviewStatusFlag.class).toString());
+        player.sendMessage("Player Review Amount");
+        for (UUID name: reviewPlot.getPlayerReviewIterationMap().keySet()) {
+            String key = Bukkit.getOfflinePlayer(name).getName();
+            String value = reviewPlot.getPlayerReviewIterationMap().get(name).toString();
+            player.sendMessage(key + " " + value);
+        }
+        player.sendMessage("Plot Temp ratings");
+        for(Integer rating : reviewPlot.getPlotTempRatings()){
+            player.sendMessage(rating.toString());
+        }
+        player.sendMessage("Plot final feedback");
+        for(String feedback : reviewPlot.getPlotFinalFeedback()){
+            player.sendMessage(feedback);
+        }
+        player.sendMessage("Plot final ratings");
+        for(Long rating : reviewPlot.getPlotFinalRatings()){
+            player.sendMessage(rating.toString());
+        }
+        player.sendMessage("Plot final timestamps");
+        for(Long timeStamp : reviewPlot.getPlotFinalReviewTimeStamps()){
+            player.sendMessage(timeStamp.toString());
+        }
+
+
     }
 }
