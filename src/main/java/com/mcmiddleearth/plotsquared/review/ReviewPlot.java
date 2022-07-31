@@ -164,6 +164,12 @@ public class ReviewPlot implements Serializable {
         return ReviewStatus.REJECTED;
     }
 
+    public void submitReviewPlot(Plot plot) {
+        File file = new File(MCMEP2.getReviewPlotDirectory().toString() + plot.getId().toString() + ".yml");
+        FlatFile.writeObjectToFile(this, file);
+        ReviewAPI.addReviewPlot(this.getId(), this);
+    }
+
     /**
      * Checks if plot passed minimal time threshold.
      * @return true if passed

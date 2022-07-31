@@ -1,6 +1,7 @@
 package com.mcmiddleearth.plotsquared.review;
 
 import com.plotsquared.bukkit.util.BukkitUtil;
+import com.plotsquared.core.events.TeleportCause;
 import com.plotsquared.core.player.PlotPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -29,8 +30,13 @@ public class ReviewPlayer {
     public boolean hasAlreadyRated(ReviewPlot reviewPlot){
         int playerReviewIteration = reviewPlot.getPlayerReviewIteration(this);
         int reviewIteration = reviewPlot.getReviewIteration();
-        return playerReviewIteration >= reviewIteration || playerReviewIteration == 0;
+        return playerReviewIteration > reviewIteration;
     }
+
+    public void teleportToReviewPlot(ReviewPlot reviewPlot){
+        reviewPlot.getPlot().teleportPlayer(this.getPlotPlayer(), TeleportCause.PLUGIN, result -> {
+        });
+        }
 
     public void setPlotRating(Integer plotRating){
         this.plotRating = plotRating;
@@ -71,6 +77,9 @@ public class ReviewPlayer {
             return true;
         if(hasAlreadyRated(this.getReviewParty().getCurrentReviewPlot()))
             return true;
+        if(this.getReviewParty().getCurrentPlot().isOwner(this.getUniqueId())) {
+            return true;
+        }
         else return false;
     }
 
@@ -79,6 +88,9 @@ public class ReviewPlayer {
             return true;
         if(hasAlreadyRated(this.getReviewParty().getCurrentReviewPlot()))
             return true;
+        if(this.getReviewParty().getCurrentPlot().isOwner(this.getUniqueId())) {
+            return true;
+        }
         else return false;
     }
 

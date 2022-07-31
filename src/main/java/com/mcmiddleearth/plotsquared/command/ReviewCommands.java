@@ -1,13 +1,11 @@
 package com.mcmiddleearth.plotsquared.command;
 
-import com.mcmiddleearth.plotsquared.MCMEP2;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
-import com.mcmiddleearth.plotsquared.util.FlatFile;
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
@@ -18,7 +16,6 @@ import me.gleeming.command.paramter.Param;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.io.File;
 import java.util.Set;
 import java.util.UUID;
 
@@ -230,36 +227,45 @@ public class ReviewCommands {
     @Command(names = {"review submit"}, playerOnly = true)
     public void submitForRating(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot currentPlot = plotPlayer.getCurrentPlot();
         if (plotPlayer.getCurrentPlot() == null) {
             player.sendMessage("You're not in a plot!");
             return;
         }
-        if(ReviewStatusFlag.isBeingReviewed(plotPlayer.getCurrentPlot()) || ReviewStatusFlag.isLocked(plotPlayer.getCurrentPlot())|| ReviewStatusFlag.isAccepted(plotPlayer.getCurrentPlot())) {
+        if(!currentPlot.isOwner(player.getUniqueId())){
+            player.sendMessage("You are not the owner of this plot");
+            return;
+        }
+        if(ReviewStatusFlag.isBeingReviewed(currentPlot) || ReviewStatusFlag.isLocked(currentPlot)|| ReviewStatusFlag.isAccepted(currentPlot)) {
             player.sendMessage("You can not submit this plot");
             return;
         }
         for (Plot plot : plotPlayer.getPlots()) {
             Set plotFlags = plot.getFlags();
-            if (plotFlags.isEmpty()) continue;
-            else if (plotFlags.contains(ReviewPlot.ReviewStatus.BEING_REVIEWED) || plotFlags.contains(ReviewPlot.ReviewStatus.ACCEPTED)) {
+            if (plotFlags.contains(ReviewPlot.ReviewStatus.BEING_REVIEWED) || plotFlags.contains(ReviewPlot.ReviewStatus.ACCEPTED)) {
                 player.sendMessage("You already have a plot up for review");
                 return;
             }
             else if (plotFlags.contains(ReviewPlot.ReviewStatus.LOCKED)) {
                 final long THREEDAYSINSECONDS = 60;//made one minute for debug reasons 86400 * 3
-                long time = Long.parseLong(plotPlayer.getCurrentPlot().getFlag(DoneFlag.class));
+                long time = Long.parseLong(plot.getFlag(DoneFlag.class));
                 if ((System.currentTimeMillis() / 1000) - time >= THREEDAYSINSECONDS) {
-                    plotPlayer.getCurrentPlot().setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-                    ReviewPlot reviewPlot = new ReviewPlot(plotPlayer.getCurrentPlot());
-                    File file = new File(MCMEP2.getReviewPlotDirectory().toString() + plotPlayer.getCurrentPlot().getId().toString() + ".yml");
-                    FlatFile.writeObjectToFile(reviewPlot, file);
-                    ReviewAPI.addReviewPlot(reviewPlot.getId(), reviewPlot);
-                    player.performCommand("plot submitted");
+                    currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
+                    ReviewPlot reviewPlot = new ReviewPlot(currentPlot);
+                    reviewPlot.submitReviewPlot(currentPlot);
+                    player.sendMessage("plot submitted");
                     return;
                 }
             }
+            else if (plotFlags.isEmpty()) {
+                currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
+                ReviewPlot reviewPlot = new ReviewPlot(currentPlot);
+                reviewPlot.submitReviewPlot(currentPlot);
+                player.sendMessage("plot submitted");
+                return;
+            }
         }
-        player.performCommand("You have not passed the time threshold, you need to wait 3 days to submit a plot");
+        player.sendMessage("You have not passed the time threshold, you need to wait 3 days to submit a plot");
     }
 
     @Command(names = {"review check"}, playerOnly = true)

@@ -1,6 +1,5 @@
 package com.mcmiddleearth.plotsquared.review;
 
-import com.plotsquared.core.events.TeleportCause;
 import com.plotsquared.core.plot.Plot;
 import org.bukkit.entity.Player;
 
@@ -60,8 +59,10 @@ public class ReviewParty {
     public void goNextPlot(){
         ReviewPlot currentReviewPlot = this.reviewPlotLinkedList.pop();
         for (ReviewPlayer i : this.getAllReviewers()){
-            this.plotFeedbacks.add(i.getPlotFeedback());
-            this.plotRatings.add(i.getPlotRating());
+            if(i.getPlotRating() != null) {
+                this.plotFeedbacks.add(i.getPlotFeedback());
+                this.plotRatings.add(i.getPlotRating());
+            }
             i.clearRating();
             i.clearFeedback();
         }
@@ -76,8 +77,7 @@ public class ReviewParty {
 
         ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
         for (ReviewPlayer i : this.getAllReviewers()){
-            nextPlot.getPlot().teleportPlayer(i.getPlotPlayer(), TeleportCause.PLUGIN, result -> {
-            });
+            i.teleportToReviewPlot(currentReviewPlot);
         }
     }
 
@@ -86,8 +86,7 @@ public class ReviewParty {
         this.partyReviewPlayers.add(reviewPlayer);
         reviewPlayer.setReviewParty(this);
 
-        getCurrentPlot().teleportPlayer(reviewPlayer.getPlotPlayer(), TeleportCause.PLUGIN, result -> {
-        });
+        reviewPlayer.teleportToReviewPlot(getCurrentReviewPlot());
     }
 
     public void removeReviewPlayer(ReviewPlayer reviewPlayer){

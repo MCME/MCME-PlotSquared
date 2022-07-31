@@ -28,13 +28,11 @@ public class ReviewStatusFlag extends PlotFlag<ReviewPlot.ReviewStatus, ReviewSt
     }
 
     public static boolean isBeingReviewed(Plot plot){
-        return plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.BEING_REVIEWED ||
-                plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.NOT_BEING_REVIEWED;
+        return plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.BEING_REVIEWED;
     }
 
     public static boolean isAccepted(Plot plot){
-        return plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.ACCEPTED ||
-                plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.LOCKED;
+        return plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.ACCEPTED;
     }
 
     public static boolean isLocked(Plot plot){
