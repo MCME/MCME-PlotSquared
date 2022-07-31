@@ -1,17 +1,25 @@
 package com.mcmiddleearth.plotsquared.command;
 
+import com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
+import com.mcmiddleearth.plotsquared.util.FlatFile;
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.player.PlotPlayer;
+import com.plotsquared.core.plot.Plot;
+import com.plotsquared.core.plot.flag.PlotFlag;
+import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import me.gleeming.command.Command;
 import me.gleeming.command.paramter.Param;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.io.File;
+import java.util.Set;
 import java.util.UUID;
 
 public class ReviewCommands {
@@ -222,11 +230,36 @@ public class ReviewCommands {
     @Command(names = {"review submit"}, playerOnly = true)
     public void submitForRating(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
-        if (plotPlayer.getCurrentPlot() == null){
+        if (plotPlayer.getCurrentPlot() == null) {
             player.sendMessage("You're not in a plot!");
             return;
         }
-        player.performCommand("plot done");
+        if(ReviewStatusFlag.isBeingReviewed(plotPlayer.getCurrentPlot()) || ReviewStatusFlag.isLocked(plotPlayer.getCurrentPlot())|| ReviewStatusFlag.isAccepted(plotPlayer.getCurrentPlot())) {
+            player.sendMessage("You can not submit this plot");
+            return;
+        }
+        for (Plot plot : plotPlayer.getPlots()) {
+            Set plotFlags = plot.getFlags();
+            if (plotFlags.isEmpty()) continue;
+            else if (plotFlags.contains(ReviewPlot.ReviewStatus.BEING_REVIEWED) || plotFlags.contains(ReviewPlot.ReviewStatus.ACCEPTED)) {
+                player.sendMessage("You already have a plot up for review");
+                return;
+            }
+            else if (plotFlags.contains(ReviewPlot.ReviewStatus.LOCKED)) {
+                final long THREEDAYSINSECONDS = 60;//made one minute for debug reasons 86400 * 3
+                long time = Long.parseLong(plotPlayer.getCurrentPlot().getFlag(DoneFlag.class));
+                if ((System.currentTimeMillis() / 1000) - time >= THREEDAYSINSECONDS) {
+                    plotPlayer.getCurrentPlot().setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
+                    ReviewPlot reviewPlot = new ReviewPlot(plotPlayer.getCurrentPlot());
+                    File file = new File(MCMEP2.getReviewPlotDirectory().toString() + plotPlayer.getCurrentPlot().getId().toString() + ".yml");
+                    FlatFile.writeObjectToFile(reviewPlot, file);
+                    ReviewAPI.addReviewPlot(reviewPlot.getId(), reviewPlot);
+                    player.performCommand("plot submitted");
+                    return;
+                }
+            }
+        }
+        player.performCommand("You have not passed the time threshold, you need to wait 3 days to submit a plot");
     }
 
     @Command(names = {"review check"}, playerOnly = true)
@@ -262,7 +295,37 @@ public class ReviewCommands {
         for(Long timeStamp : reviewPlot.getPlotFinalReviewTimeStamps()){
             player.sendMessage(timeStamp.toString());
         }
-
-
     }
+    @Command(names = {"review plotdebug"}, playerOnly = true)
+    public void debugPlots(Player player) {
+        for(ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()){
+            if (reviewPlot.getReviewStatus() == ReviewPlot.ReviewStatus.ACCEPTED) {
+                Plot plot = reviewPlot.getPlot();
+                plot.getFlag(ReviewDataFlag.class).addAll(reviewPlot.preparedReviewData());
+                reviewPlot.deleteReviewPlotData();
+                //set plot to done
+                long flagValue = System.currentTimeMillis() / 1000;
+                PlotFlag<?, ?> plotFlag = plot.getFlagContainer().getFlag(DoneFlag.class)
+                    .createFlagInstance(Long.toString(flagValue));
+                plot.setFlag(plotFlag);
+                //set plot to ACCEPTED
+                plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
+                player.sendMessage("a plot was accepted");
+            }
+        }
+        player.sendMessage("no more plots to be accepted");
+    }
+
+//    @Command(names = {"review lock"}, playerOnly = true)
+//    public void lockPlot(Player player) {
+//        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+//        for(Plot plot : plotPlayer.getPlots()){
+//            if(plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.ACCEPTED){
+//                plot.setFlag(ReviewStatusFlag.LOCKED_FLAG);
+//                player.sendMessage("Plot successfully permanently locked.");
+//                return;
+//            }
+//        }
+//        player.sendMessage("No plots to be locked.");
+//    }
 }

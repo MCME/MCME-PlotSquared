@@ -1,6 +1,7 @@
 package com.mcmiddleearth.plotsquared;
 
 import com.mcmiddleearth.plotsquared.listener.P2CommandListener;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
@@ -8,7 +9,10 @@ import com.mcmiddleearth.plotsquared.review.ReviewPlot;
 import com.mcmiddleearth.plotsquared.util.FlatFile;
 import com.plotsquared.core.PlotAPI;
 import com.plotsquared.core.PlotSquared;
+import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
+import com.plotsquared.core.plot.flag.PlotFlag;
+import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import me.gleeming.command.CommandHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
@@ -55,20 +59,30 @@ public final class MCMEP2 extends JavaPlugin {
         }
 
         //load all reviewplots
-        getLogger().info("before loading files");
         for (File file : reviewPlotDirectory.listFiles()) {
 
-            getLogger().info("loading files");
             getLogger().info(file.getName());
             ReviewPlot reviewPlot = FlatFile.readObjectFromFile(file);
             getLogger().info(file.getName());
             if(reviewPlot == null){
-                getLogger().info( file.getName() + "review plot null");
                 file.delete();
             }
             else {
-                ReviewAPI.addReviewPlot(reviewPlot.getId(), reviewPlot);
-                getLogger().info(reviewPlot.getId().toString() + "review plot not null");
+                if (reviewPlot.getReviewStatus() == ReviewPlot.ReviewStatus.ACCEPTED){
+                    Plot plot = reviewPlot.getPlot();
+                    plot.getFlag(ReviewDataFlag.class).addAll(reviewPlot.preparedReviewData());
+                    reviewPlot.deleteReviewPlotData();
+                    //set plot to done
+                    long flagValue = System.currentTimeMillis() / 1000;
+                    PlotFlag<?, ?> plotFlag = plot.getFlagContainer().getFlag(DoneFlag.class)
+                            .createFlagInstance(Long.toString(flagValue));
+                    plot.setFlag(plotFlag);
+                    //set plot to ACCEPTED
+                    plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
+                }
+                else{
+                    ReviewAPI.addReviewPlot(reviewPlot.getId(), reviewPlot);
+                }
             }
         }
 

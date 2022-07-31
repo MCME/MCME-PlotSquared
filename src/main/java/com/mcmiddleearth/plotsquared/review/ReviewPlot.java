@@ -148,7 +148,7 @@ public class ReviewPlot implements Serializable {
         }
     }
 
-    private List<Long> preparedReviewData() {
+    public List<Long> preparedReviewData() {
         List<Long> reviewDataList = new ArrayList<>();
         reviewDataList.addAll(plotFinalRatings);
         reviewDataList.addAll(plotFinalReviewTimeStamps);
@@ -170,7 +170,7 @@ public class ReviewPlot implements Serializable {
      */
     private boolean passedTimeThreshold() {
         if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot
-        final int DAYINSECONDS = 86400;
+        final int DAYINSECONDS = 60;//made one minute for debug reasons 86400
         return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1) <= ((System.currentTimeMillis() / 1000) - DAYINSECONDS);
     }
 
@@ -240,7 +240,7 @@ public class ReviewPlot implements Serializable {
         else return FlatFile.readObjectFromFile(file);
     }
 
-    private void deleteReviewPlotData() {
+    public void deleteReviewPlotData() {
         File reviewPlotYamlFile = new File(MCMEP2.getReviewPlotDirectory().toString() + File.separator + plotId + ".yml");
         reviewPlotYamlFile.delete();
     }

@@ -25,16 +25,22 @@ public class PlayerListener implements Listener {
             switch (i.getFlag(reviewStatus)){
                 case BEING_REVIEWED:
                     playerJoinEvent.getPlayer().sendMessage("Your plot is being reviewed");
+                    break;
                 case NOT_BEING_REVIEWED:
                     // do nothing
+                    break;
                 case ACCEPTED:
+                    i.setFlag(ReviewStatusFlag.LOCKED_FLAG);
                     playerJoinEvent.getPlayer().sendMessage("Congratulations your plot has been accepted!");
-                    playerJoinEvent.getPlayer().sendMessage("Go to it now to lock it and obtain a new plot");
+                    playerJoinEvent.getPlayer().sendMessage("You can now claim a new plot");
+                    break;
                 case REJECTED:
+                    i.setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
                     playerJoinEvent.getPlayer().sendMessage("Unfortunately your plot did not get accepted");
-                    i.setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG); // do not bother them with it the next join :P
+                    break;
                 case LOCKED:
                     // do nothing
+                    break;
             }
         }
     }
