@@ -309,8 +309,8 @@ public class ReviewCommands {
                     .createFlagInstance(Long.toString(flagValue));
                 plot.setFlag(plotFlag);
                 //set plot to ACCEPTED
-                plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
-                player.sendMessage("a plot was accepted");
+                plot.setFlag(ReviewStatusFlag.LOCKED_FLAG);
+                player.sendMessage("a plot was accepted and locked");
             }
         }
         player.sendMessage("no more plots to be accepted");
