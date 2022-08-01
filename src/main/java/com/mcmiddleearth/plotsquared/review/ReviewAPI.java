@@ -12,6 +12,7 @@ public class ReviewAPI {
     private static HashMap<UUID, ReviewPlayer> reviewerPlayers = new HashMap<>();
     private static HashMap<UUID, ReviewParty> reviewParties = new HashMap<>();
     private static HashMap<PlotId, ReviewPlot> reviewPlots = new HashMap<>();
+    private static HashMap<UUID, ReviewPlayer> invites = new HashMap<>(); // implement invites
 
     public static HashMap<UUID, ReviewPlayer> getReviewerPlayers() {
         return reviewerPlayers;

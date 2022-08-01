@@ -175,7 +175,7 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     private boolean passedTimeThreshold() {
-        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot
+        if(plotTempRatings.size()<3) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
         final int DAYINSECONDS = 60;//made one minute for debug reasons 86400
         return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1) <= ((System.currentTimeMillis() / 1000) - DAYINSECONDS);
     }
@@ -185,7 +185,7 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     public boolean passedRatingThreshold(){
-        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot
+        if(plotTempRatings.size()<3) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
         int ratingSum = 0;
         int count = 0;
         for(int i : plotTempRatings){

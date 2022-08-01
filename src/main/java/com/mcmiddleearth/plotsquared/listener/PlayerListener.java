@@ -59,7 +59,7 @@ public class PlayerListener implements Listener {
                         for(ReviewPlayer i : reviewParty.getAllReviewers()){
                             Bukkit.getPlayer(i.getUniqueId()).sendMessage("The reviewparty leader has been gone for too long, ending review.");
                         }
-                        reviewParty.stopParty();
+                        reviewParty.stopReviewParty();
                         return;
                     }
                     if(ReviewAPI.getReviewParties().containsKey(reviewParty.getId())) {

@@ -19,6 +19,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.Objects;
 
 public final class MCMEP2 extends JavaPlugin {
 
@@ -50,16 +51,12 @@ public final class MCMEP2 extends JavaPlugin {
 
         //data loading and making directories
         pluginDirectory = getDataFolder();
-        if (!pluginDirectory.exists()) {
-            pluginDirectory.mkdir();
-        }
+        if (!pluginDirectory.exists()) pluginDirectory.mkdir();
         reviewPlotDirectory = new File(pluginDirectory.toString() + File.separator + "ReviewPlotDirectory");
-        if (!reviewPlotDirectory.exists()) {
-            reviewPlotDirectory.mkdir();
-        }
+        if (!reviewPlotDirectory.exists()) reviewPlotDirectory.mkdir();
 
         //load all reviewplots
-        for (File file : reviewPlotDirectory.listFiles()) {
+        for (File file : Objects.requireNonNull(reviewPlotDirectory.listFiles())) {
 
             getLogger().info(file.getName());
             ReviewPlot reviewPlot = FlatFile.readObjectFromFile(file);
@@ -98,7 +95,7 @@ public final class MCMEP2 extends JavaPlugin {
         PlotSquared.get().getEventDispatcher().unregisterListener(new P2CommandListener());
 
         for(ReviewParty i : ReviewAPI.getReviewParties().values()){
-            i.stopParty();
+            i.stopReviewParty();
         }
     }
 

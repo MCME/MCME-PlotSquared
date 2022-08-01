@@ -23,34 +23,25 @@ public class ReviewParty {
         this.LEADER = leader;
         //add all reviewplots which the leader hasn't reviewed
         for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()){
-            //getLogger().info(String.valueOf(reviewPlot.getPlayerReviewIteration(leader)) + String.valueOf(reviewPlot.getReviewIteration()));
-            if(!leader.hasAlreadyRated(reviewPlot)) {
-                //getLogger().info(String.valueOf(reviewPlot.getPlayerReviewIteration(leader)) + String.valueOf(reviewPlot.getReviewIteration()));
-                reviewPlotLinkedList.add(reviewPlot);
-            }
+            if(!leader.hasAlreadyReviewed(reviewPlot)) reviewPlotLinkedList.add(reviewPlot);
             else return;
         }
-        if(!reviewPlotLinkedList.isEmpty()){
-            addReviewPlayer(leader);
-        }
+        if(!reviewPlotLinkedList.isEmpty()) addReviewPlayer(leader);
     }
 
-    public static ReviewParty startReviewParty(Player player){
+    public static void startReviewParty(Player player){
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         ReviewParty reviewParty = new ReviewParty(reviewPlayer.getUniqueId(), reviewPlayer);
         ReviewAPI.addReviewParty(reviewParty);
         ReviewAPI.addReviewPlayer(reviewPlayer);
         reviewPlayer.setReviewParty(reviewParty);
-        return reviewParty;
     }
 
-    public void stopParty(){
+    public void stopReviewParty(){
         for (ReviewPlayer i : this.getAllReviewers()){
             ReviewAPI.removeReviewPlayer(i);
         }
-
         ReviewAPI.removeReviewParty(this);
-
         for (ReviewPlot i : reviewPlotLinkedList) {
             i.preemptPlotReview(this);
         }
@@ -66,15 +57,12 @@ public class ReviewParty {
             i.clearRating();
             i.clearFeedback();
         }
-
-        currentReviewPlot.endPlotReview(this); // IMPORTANT METHOD
-
+        currentReviewPlot.endPlotReview(this);
         //check for any remaining plots
         if(this.reviewPlotLinkedList.isEmpty()){
-            stopParty();
+            stopReviewParty();
             return;
         }
-
         ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
         for (ReviewPlayer i : this.getAllReviewers()){
             i.teleportToReviewPlot(currentReviewPlot);
@@ -95,9 +83,8 @@ public class ReviewParty {
         reviewPlayer.clearRating();
         reviewPlayer.clearFeedback();
         reviewPlayer.clearReviewParty();
-
         if(reviewPlayer.isReviewPartyLeader()){
-            this.stopParty();
+            this.stopReviewParty();
         }
     }
 

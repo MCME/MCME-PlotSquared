@@ -33,7 +33,7 @@ public class ReviewCommands {
             return;
         }
         for(ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()) {
-            if(reviewPlayer.hasAlreadyRated(reviewPlot)) {
+            if(reviewPlayer.hasAlreadyReviewed(reviewPlot)) {
                 player.sendMessage("You've already reviewed all plots to review");
                 return;
             }
@@ -53,7 +53,7 @@ public class ReviewCommands {
             player.sendMessage("You're not the reviewparty leader");
             return;
         }
-        reviewPlayer.getReviewParty().stopParty();
+        reviewPlayer.getReviewParty().stopReviewParty();
         player.sendMessage("Reviewparty ended");
     }
 
@@ -100,7 +100,7 @@ public class ReviewCommands {
             return;
         }
         if(reviewPlayer.isReviewPartyLeader()){
-            reviewPlayer.getReviewParty().stopParty();
+            reviewPlayer.getReviewParty().stopReviewParty();
             player.sendMessage("Stopped reviewparty");
             return;
         }
@@ -153,7 +153,7 @@ public class ReviewCommands {
         }
         if(reviewPlayer.getReviewParty().getNextReviewPlot() == null){
             player.sendMessage("No plots left to review. Ending review party");
-            reviewPlayer.getReviewParty().stopParty();
+            reviewPlayer.getReviewParty().stopReviewParty();
             return;
         }
         reviewPlayer.getReviewParty().goNextPlot();
@@ -171,7 +171,7 @@ public class ReviewCommands {
             player.sendMessage("Can't rate your own plot!");
             return;
         }
-        if(reviewPlayer.hasAlreadyRated(reviewPlayer.getReviewParty().getCurrentReviewPlot())){
+        if(reviewPlayer.hasAlreadyReviewed(reviewPlayer.getReviewParty().getCurrentReviewPlot())){
             player.sendMessage("You've already submitted a rating for this plot");
             return;
         }
@@ -179,8 +179,8 @@ public class ReviewCommands {
             player.sendMessage("First give feedback you lazy duck!");
             return;
         }
-        if(0 >= rating || rating >= 100){
-            player.sendMessage("give rating between 0 and 100");
+        if(0 > rating || rating > 100){
+            player.sendMessage("Rating must be in range 0-100");
             return;
         }
 
@@ -201,7 +201,7 @@ public class ReviewCommands {
     }
 
     @Command(names = {"review feedback"}, playerOnly = true)
-    public void reviewFeedback(Player player, @Param(name = "message") String feedback) {
+    public void reviewFeedback(Player player, @Param(name = "message", concated = true) String feedback) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if(!reviewPlayer.isReviewing()){
             player.sendMessage("You're not reviewing!");
@@ -211,7 +211,7 @@ public class ReviewCommands {
             player.sendMessage("Can't give feedback to your own plot!");
             return;
         }
-        if(reviewPlayer.hasAlreadyRated(reviewPlayer.getReviewParty().getCurrentReviewPlot())){
+        if(reviewPlayer.hasAlreadyReviewed(reviewPlayer.getReviewParty().getCurrentReviewPlot())){
             player.sendMessage("You've already submitted a rating for this plot");
             return;
         }
