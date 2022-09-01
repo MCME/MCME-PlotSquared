@@ -2,11 +2,9 @@ package com.mcmiddleearth.plotsquared.listener;
 
 import com.google.common.eventbus.Subscribe;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.review.ReviewPlot;
 import com.plotsquared.core.PlotAPI;
-import com.plotsquared.core.events.PlayerClaimPlotEvent;
-import com.plotsquared.core.events.PlotClearEvent;
-import com.plotsquared.core.events.PlotDoneEvent;
-import com.plotsquared.core.events.Result;
+import com.plotsquared.core.events.*;
 import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
@@ -28,11 +26,10 @@ public class P2CommandListener implements Listener {
     public void onPlayerClaimPlot(PlayerClaimPlotEvent playerClaimPlotEvent) {
         PlotPlayer<?> plotPlayer = playerClaimPlotEvent.getPlotPlayer();
         Player player = Bukkit.getPlayer(plotPlayer.getUUID());
-        //if player has an accepted plot he needs to lock it before claiming a new one
         for(Plot plot : plotPlayer.getPlots()){
             if(ReviewStatusFlag.isAccepted(plot)){
-                playerClaimPlotEvent.setEventResult(Result.DENY);
-                player.sendMessage("You need to lock your previous plot before claiming a new one.");
+                plot.setFlag(ReviewStatusFlag.LOCKED_FLAG);
+                return;
             }
         }
     }
@@ -80,17 +77,36 @@ public class P2CommandListener implements Listener {
     }
     @Subscribe
     public void OnPlotClear(PlotClearEvent plotClearEvent){
-        Player player = Bukkit.getPlayer(plotClearEvent.getPlot().getOwner());
         Plot plot = plotClearEvent.getPlot();
+        plotClearEvent.setEventResult(Result.DENY);
         if (DoneFlag.isDone(plot)){
-            plotClearEvent.setEventResult(Result.DENY);
             getLogger().info("Plot has been locked can't clear");
+            return;
+        }
+        if(ReviewStatusFlag.isBeingReviewed(plot)){
+            getLogger().info("Being reviewed can't clear");
+            return;
         }
         else{
-            if(ReviewStatusFlag.isBeingReviewed(plotClearEvent.getPlot())){
-                plotClearEvent.setEventResult(Result.DENY);
-                getLogger().info("Being reviewed can't clear");
-            }
+            plotClearEvent.setEventResult(Result.ACCEPT);
+        }
+    }
+
+    @Subscribe
+    public void onPlotDelete(PlotDeleteEvent plotDeleteEvent){
+        Plot plot = plotDeleteEvent.getPlot();
+        plotDeleteEvent.setEventResult(Result.DENY);
+        if (DoneFlag.isDone(plot)){
+            getLogger().info("Plot has been locked can't delete");
+            return;
+        }
+        if(ReviewStatusFlag.isBeingReviewed(plot)){
+            getLogger().info("Being reviewed can't delete");
+            return;
+        }
+        else{
+            ReviewPlot.loadReviewPlotData(plot).deleteReviewPlotData();
+            plotDeleteEvent.setEventResult(Result.ACCEPT);
         }
     }
 }

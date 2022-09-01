@@ -37,9 +37,9 @@ public class ReviewPlayer {
             return true;
         if(hasAlreadyReviewed(this.getReviewParty().getCurrentReviewPlot()))
             return true;
-        if(this.getReviewParty().getCurrentPlot().isOwner(this.getUniqueId())) {
-            return true;
-        }
+//        if(this.getReviewParty().getCurrentPlot().isOwner(this.getUniqueId())) {
+//            return true;
+//        }
         else return false;
     }
 
@@ -48,9 +48,9 @@ public class ReviewPlayer {
             return true;
         if(hasAlreadyReviewed(this.getReviewParty().getCurrentReviewPlot()))
             return true;
-        if(this.getReviewParty().getCurrentPlot().isOwner(this.getUniqueId())) {
-            return true;
-        }
+//        if(this.getReviewParty().getCurrentPlot().isOwner(this.getUniqueId())) {
+//            return true;
+//        }
         else return false;
     }
 

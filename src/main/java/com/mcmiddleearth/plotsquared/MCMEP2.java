@@ -6,19 +6,17 @@ import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
-import com.mcmiddleearth.plotsquared.util.FlatFile;
+import com.mcmiddleearth.plotsquared.util.FileManagement;
 import com.plotsquared.core.PlotAPI;
 import com.plotsquared.core.PlotSquared;
-import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
-import com.plotsquared.core.plot.flag.PlotFlag;
-import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import me.gleeming.command.CommandHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Objects;
 
 public final class MCMEP2 extends JavaPlugin {
@@ -46,6 +44,7 @@ public final class MCMEP2 extends JavaPlugin {
         plotAPI = new PlotAPI();
         PlotSquared.get().getEventDispatcher().registerListener(new P2CommandListener());
         GlobalFlagContainer.getInstance().addFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
+        GlobalFlagContainer.getInstance().addFlag(new ReviewDataFlag(Collections.emptyList()));
 
         new ReviewAPI();
 
@@ -54,36 +53,38 @@ public final class MCMEP2 extends JavaPlugin {
         if (!pluginDirectory.exists()) pluginDirectory.mkdir();
         reviewPlotDirectory = new File(pluginDirectory.toString() + File.separator + "ReviewPlotDirectory");
         if (!reviewPlotDirectory.exists()) reviewPlotDirectory.mkdir();
-
+        getLogger().info("loading all files");
         //load all reviewplots
         for (File file : Objects.requireNonNull(reviewPlotDirectory.listFiles())) {
 
             getLogger().info(file.getName());
-            ReviewPlot reviewPlot = FlatFile.readObjectFromFile(file);
+            ReviewPlot reviewPlot = FileManagement.readObjectFromFile(file);
             getLogger().info(file.getName());
             if(reviewPlot == null){
                 file.delete();
             }
             else {
-                if (reviewPlot.getReviewStatus() == ReviewPlot.ReviewStatus.ACCEPTED){
-                    Plot plot = reviewPlot.getPlot();
-                    plot.getFlag(ReviewDataFlag.class).addAll(reviewPlot.preparedReviewData());
-                    reviewPlot.deleteReviewPlotData();
-                    //set plot to done
-                    long flagValue = System.currentTimeMillis() / 1000;
-                    PlotFlag<?, ?> plotFlag = plot.getFlagContainer().getFlag(DoneFlag.class)
-                            .createFlagInstance(Long.toString(flagValue));
-                    plot.setFlag(plotFlag);
-                    //set plot to ACCEPTED
-                    plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
-                }
-                else{
-                    ReviewAPI.addReviewPlot(reviewPlot.getId(), reviewPlot);
-                }
+                //don't think I need to have this
+//                if (reviewPlot.getReviewStatus() == ReviewPlot.ReviewStatus.ACCEPTED){
+//                    Plot plot = reviewPlot.getPlot();
+//                    plot.getFlag(ReviewDataFlag.class).addAll(reviewPlot.preparedReviewData());
+//                    reviewPlot.deleteReviewPlotData();
+//                    //set plot to done
+//                    long flagValue = System.currentTimeMillis() / 1000;
+//                    PlotFlag<?, ?> plotFlag = plot.getFlagContainer().getFlag(DoneFlag.class)
+//                            .createFlagInstance(Long.toString(flagValue));
+//                    plot.setFlag(plotFlag);
+//                    //set plot to ACCEPTED
+//                    plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
+//                }
+//                else{
+
+                //}
+            ReviewAPI.addReviewPlot(reviewPlot.getPlotId(), reviewPlot);
             }
         }
 
-        getLogger().info("after loading files");
+        getLogger().info("all files are loaded");
         //initializes commands
         CommandHandler.registerCommands("com.mcmiddleearth.plotsquared.command", this);
 
@@ -91,9 +92,7 @@ public final class MCMEP2 extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("onDisable is called!");
-        GlobalFlagContainer.getInstance().removeFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
-        PlotSquared.get().getEventDispatcher().unregisterListener(new P2CommandListener());
-
+//        PlotSquared.get().getEventDispatcher().unregisterListener(new P2CommandListener());
         for(ReviewParty i : ReviewAPI.getReviewParties().values()){
             i.stopReviewParty();
         }

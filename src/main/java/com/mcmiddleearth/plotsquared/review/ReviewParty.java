@@ -11,39 +11,45 @@ import java.util.UUID;
  * A reviewParty consists of reviewPlayers.
  */
 public class ReviewParty {
-    private final UUID ID;
     private final ReviewPlayer LEADER;
     private HashSet<ReviewPlayer> partyReviewPlayers = new HashSet<>();
     private LinkedList<ReviewPlot> reviewPlotLinkedList = new LinkedList<>();    //linked list of latest plots to be reviewed
     private HashSet<String> plotFeedbacks = new HashSet<>();
     private HashSet<Integer> plotRatings = new HashSet<>();
 
-    public ReviewParty(UUID id, ReviewPlayer leader) {
-        this.ID = id;
+    public ReviewParty(ReviewPlayer leader) {
         this.LEADER = leader;
         //add all reviewplots which the leader hasn't reviewed
         for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()){
             if(!leader.hasAlreadyReviewed(reviewPlot)) reviewPlotLinkedList.add(reviewPlot);
-            else return;
         }
+        //if any such plots are found add the leader and by that start the party
         if(!reviewPlotLinkedList.isEmpty()) addReviewPlayer(leader);
     }
 
     public static void startReviewParty(Player player){
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        ReviewParty reviewParty = new ReviewParty(reviewPlayer.getUniqueId(), reviewPlayer);
-        ReviewAPI.addReviewParty(reviewParty);
-        ReviewAPI.addReviewPlayer(reviewPlayer);
-        reviewPlayer.setReviewParty(reviewParty);
+        ReviewParty reviewParty = new ReviewParty(reviewPlayer);
+        if(!reviewParty.reviewPlotLinkedList.isEmpty()) {
+            ReviewAPI.addReviewParty(reviewParty);
+            ReviewAPI.addReviewPlayer(reviewPlayer);
+        }
     }
 
     public void stopReviewParty(){
+        for (ReviewPlot i : reviewPlotLinkedList) {
+            i.endPlotReview(this);
+        }
         for (ReviewPlayer i : this.getAllReviewers()){
             ReviewAPI.removeReviewPlayer(i);
         }
         ReviewAPI.removeReviewParty(this);
-        for (ReviewPlot i : reviewPlotLinkedList) {
-            i.preemptPlotReview(this);
+    }
+
+    public void goCurrentPlot(){
+        ReviewPlot currentReviewPlot = this.reviewPlotLinkedList.getFirst();
+        for (ReviewPlayer i : this.getAllReviewers()) {
+            i.teleportToReviewPlot(currentReviewPlot);
         }
     }
 
@@ -58,14 +64,18 @@ public class ReviewParty {
             i.clearFeedback();
         }
         currentReviewPlot.endPlotReview(this);
+        this.clearFeedbacks();
+        this.clearRatings();
+
         //check for any remaining plots
         if(this.reviewPlotLinkedList.isEmpty()){
             stopReviewParty();
-            return;
         }
-        ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
-        for (ReviewPlayer i : this.getAllReviewers()){
-            i.teleportToReviewPlot(currentReviewPlot);
+        else {
+            ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
+            for (ReviewPlayer i : this.getAllReviewers()) {
+                i.teleportToReviewPlot(currentReviewPlot);
+            }
         }
     }
 
@@ -113,6 +123,14 @@ public class ReviewParty {
         return this.reviewPlotLinkedList.get(1);
     }
 
+    private void clearRatings() {
+        this.plotRatings.clear();
+    }
+
+    private void clearFeedbacks() {
+        this.plotFeedbacks.clear();
+    }
+
     public ReviewPlot getCurrentReviewPlot(){
         return reviewPlotLinkedList.getFirst();
     }
@@ -125,7 +143,7 @@ public class ReviewParty {
         return LEADER;
     }
 
-    public boolean containsReviewer(ReviewPlayer reviewPlayer) {
+    public boolean containsReviewPlayer(ReviewPlayer reviewPlayer) {
         return partyReviewPlayers.contains(reviewPlayer);
     }
 

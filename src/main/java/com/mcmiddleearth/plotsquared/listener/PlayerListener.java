@@ -22,25 +22,17 @@ public class PlayerListener implements Listener {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(playerJoinEvent.getPlayer());
         ReviewStatusFlag reviewStatus = ReviewStatusFlag.BEING_REVIEWED_FLAG;
         for (Plot i : plotPlayer.getPlots()){
-            switch (i.getFlag(reviewStatus)){
-                case BEING_REVIEWED:
-                    playerJoinEvent.getPlayer().sendMessage("Your plot is being reviewed");
-                    break;
-                case NOT_BEING_REVIEWED:
-                    // do nothing
-                    break;
-                case ACCEPTED:
+            switch (i.getFlag(reviewStatus)) {
+                case ACCEPTED -> {
                     i.setFlag(ReviewStatusFlag.LOCKED_FLAG);
                     playerJoinEvent.getPlayer().sendMessage("Congratulations your plot has been accepted!");
                     playerJoinEvent.getPlayer().sendMessage("You can now claim a new plot");
-                    break;
-                case REJECTED:
+                }
+                case REJECTED -> {
                     i.setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
                     playerJoinEvent.getPlayer().sendMessage("Unfortunately your plot did not get accepted");
-                    break;
-                case LOCKED:
-                    // do nothing
-                    break;
+                    playerJoinEvent.getPlayer().sendMessage("Feel free to try again.");
+                }
             }
         }
     }
@@ -48,29 +40,31 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent playerQuitEvent){
         Player player = playerQuitEvent.getPlayer();
-        Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
-            @Override
-            public void run() {
-                if (player.isOnline()) return;
-                if(ReviewAPI.isReviewPlayer(player)){
-                    ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-                    ReviewParty reviewParty = reviewPlayer.getReviewParty();
-                    if(reviewPlayer.isReviewPartyLeader()) {
-                        for(ReviewPlayer i : reviewParty.getAllReviewers()){
-                            Bukkit.getPlayer(i.getUniqueId()).sendMessage("The reviewparty leader has been gone for too long, ending review.");
+        if (ReviewAPI.isReviewPlayer(player)) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline()) return;
+                    if (ReviewAPI.isReviewPlayer(player)) {
+                        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+                        ReviewParty reviewParty = reviewPlayer.getReviewParty();
+                        if (ReviewAPI.getReviewParties().containsKey(reviewParty.getId())) {
+                            for (ReviewPlayer i : reviewParty.getAllReviewers()) {
+                                Bukkit.getPlayer(i.getUniqueId()).sendMessage(player.getName().toString() + "has left the party");
+                            }
+                            reviewParty.removeReviewPlayer(reviewPlayer);
+                            return;
                         }
-                        reviewParty.stopReviewParty();
-                        return;
-                    }
-                    if(ReviewAPI.getReviewParties().containsKey(reviewParty.getId())) {
-                        for(ReviewPlayer i : reviewParty.getAllReviewers()){
-                            Bukkit.getPlayer(i.getUniqueId()).sendMessage(player.getName().toString() + "has left the party");
+                        if (reviewPlayer.isReviewPartyLeader()) {
+                            for (ReviewPlayer i : reviewParty.getAllReviewers()) {
+                                Bukkit.getPlayer(i.getUniqueId()).sendMessage("The reviewparty leader has been gone for too long, ending review.");
+                            }
+                            reviewParty.stopReviewParty();
+                            return;
                         }
-                        reviewParty.removeReviewPlayer(reviewPlayer);
-                        return;
                     }
                 }
-            }
-        }, 20*60*5);
+            }, 20 * 60 * 5);
+        }
     }
 }
