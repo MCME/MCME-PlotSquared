@@ -25,8 +25,11 @@ import java.util.Set;
 import java.util.UUID;
 
 public class ReviewCommands {
-
-    @Command(names = {"review start"}, playerOnly = true)
+    /**
+     * Start a ReviewParty.
+     * @param player
+     */
+    @Command(names = {"review start"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewStart(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -48,7 +51,11 @@ public class ReviewCommands {
         plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
     }
 
-    @Command(names = {"review end"}, playerOnly = true)
+    /**
+     * End a ReviewParty.
+     * @param player
+     */
+    @Command(names = {"review end"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewStop(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -85,7 +92,12 @@ public class ReviewCommands {
 //        player.sendMessage("");
 //    }
 
-    @Command(names = {"review join"}, playerOnly = true)
+    /**
+     * Join a ReviewParty.
+     * @param player
+     * @param target
+     */
+    @Command(names = {"review join"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewJoin(Player player, @Param(name = "player") Player target) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -105,7 +117,11 @@ public class ReviewCommands {
         }
     }
 
-    @Command(names = {"review leave"}, playerOnly = true)
+    /**
+     * Leave a ReviewParty.
+     * @param player
+     */
+    @Command(names = {"review leave"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewLeave(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -128,7 +144,12 @@ public class ReviewCommands {
         }
     }
 
-    @Command(names = {"review kick"}, playerOnly = true)
+    /**
+     * Kick a target Player from your ReviewParty.
+     * @param player
+     * @param target
+     */
+    @Command(names = {"review kick"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewKick(Player player, @Param(name = "player") Player target) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -156,7 +177,11 @@ public class ReviewCommands {
         }
     }
 
-    @Command(names = {"review tp"}, playerOnly = true)
+    /**
+     * Teleport to the current Plot.
+     * @param player
+     */
+    @Command(names = {"review tp"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewToPlot(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -168,7 +193,11 @@ public class ReviewCommands {
         plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.tp"));
     }
 
-    @Command(names = {"review next"}, playerOnly = true)
+    /**
+     * Continue on to next Plot.
+     * @param player
+     */
+    @Command(names = {"review next"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewNext(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -196,7 +225,12 @@ public class ReviewCommands {
         player.sendMessage("Teleported to next plot");
     }
 
-    @Command(names = {"review rate"}, playerOnly = true)
+    /**
+     * Rate a Plot between 0 and 100.
+     * @param player
+     * @param rating
+     */
+    @Command(names = {"review rate"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewRate(Player player, @Param(name = "number") int rating) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -238,7 +272,12 @@ public class ReviewCommands {
         plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.waiting"));
     }
 
-    @Command(names = {"review feedback"}, playerOnly = true)
+    /**
+     * Give feedback to a Plot.
+     * @param player
+     * @param feedback
+     */
+    @Command(names = {"review feedback"}, permission = "mcmep2.review", playerOnly = true)
     public void reviewFeedback(Player player, @Param(name = "message", concated = true) String feedback) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
@@ -263,7 +302,11 @@ public class ReviewCommands {
         plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.feedback"));
     }
 
-    @Command(names = {"review submit"}, playerOnly = true)
+    /**
+     * Submit a Plot for review.
+     * @param player
+     */
+    @Command(names = {"review submit"}, permission = "mcmep2.submit", playerOnly = true)
     public void submitForRating(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot currentPlot = plotPlayer.getCurrentPlot();
@@ -311,7 +354,11 @@ public class ReviewCommands {
         }
     }
 
-    @Command(names = {"review check"}, playerOnly = true)
+    /**
+     * Checks the review status of a Plot.
+     * @param player
+     */
+    @Command(names = {"review check"}, permission = "mcmep2.submit", playerOnly = true)
     public void checkRating(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot plot = plotPlayer.getCurrentPlot();
@@ -365,7 +412,7 @@ public class ReviewCommands {
         }
     }
 
-    @Command(names = {"review plotdebug"}, playerOnly = true)
+    @Command(names = {"review plotdebug"}, permission = "mcmep2.review", playerOnly = true)
     public void debugPlots(Player player) {
         for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()) {
             if (reviewPlot.getReviewStatus() == ReviewPlot.ReviewStatus.ACCEPTED) {
