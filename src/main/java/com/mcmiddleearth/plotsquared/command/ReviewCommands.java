@@ -6,6 +6,7 @@ import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
+import com.mcmiddleearth.plotsquared.util.MiniMessageUtil;
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.player.PlotPlayer;
@@ -14,7 +15,7 @@ import com.plotsquared.core.plot.flag.PlotFlag;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import me.gleeming.command.Command;
 import me.gleeming.command.paramter.Param;
-import net.kyori.adventure.text.minimessage.Template;
+//import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -34,21 +35,21 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.already_reviewing"));
             return;
         }
         if (ReviewAPI.getReviewPlotsCollection().isEmpty()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.no_plots"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.no_plots"));
             return;
         }
         for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()) {
             if (reviewPlayer.hasAlreadyReviewed(reviewPlot)) {
-                plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
+                MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
                 return;
             }
         }
         ReviewParty.startReviewParty(player);
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.start"));
     }
 
     /**
@@ -60,15 +61,15 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (!reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
         if (!reviewPlayer.isReviewPartyLeader()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_leader"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_leader"));
             return;
         }
         reviewPlayer.getReviewParty().stopReviewParty();
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.end"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.end"));
     }
 
 //    @Command(names = {"review invite"}, playerOnly = true)
@@ -103,17 +104,17 @@ public class ReviewCommands {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         ReviewPlayer reviewTarget = ReviewAPI.getReviewPlayer(target);
         if (reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.already_reviewing"));
             return;
         }
         if (!reviewTarget.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing_other"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.already_reviewing_other"));
             return;
         }
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.join"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.join"));
         reviewTarget.getReviewParty().addReviewPlayer(reviewPlayer);
         for(ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
-            i.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.joined_notif"),  Template.of("player", player.getName()));
+            MiniMessageUtil.sendMessage(i.getPlotPlayer(),TranslatableCaption.of("mcme.review.joined_notif"), MiniMessageUtil.templateOf("player", player.getName()));
         }
     }
 
@@ -126,21 +127,21 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (!reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
         if (reviewPlayer.isReviewPartyLeader()) {
             for(ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
-                i.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.leader_left"));
+                MiniMessageUtil.sendMessage(i.getPlotPlayer(),TranslatableCaption.of("mcme.review.leader_left"));
             }
             reviewPlayer.getReviewParty().stopReviewParty();
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.end"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.end"));
             return;
         }
         reviewPlayer.leaveReviewParty();
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.left"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.left"));
         for(ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
-            i.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.left_notif"),  Template.of("player", player.getName()));
+            MiniMessageUtil.sendMessage(i.getPlotPlayer(),TranslatableCaption.of("mcme.review.left_notif"), MiniMessageUtil.templateOf("player", player.getName()));
         }
     }
 
@@ -155,25 +156,25 @@ public class ReviewCommands {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         ReviewPlayer reviewTarget = ReviewAPI.getReviewPlayer(target);
         if (!reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
         if (!reviewPlayer.isReviewPartyLeader()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_leader"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_leader"));
             return;
         }
         if (!reviewTarget.isReviewing() || reviewTarget.getReviewParty() != reviewPlayer.getReviewParty()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_party"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_in_party"));
             return;
         }
         if (reviewPlayer == reviewTarget) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.kick_self"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.kick_self"));
             return;
         }
-        reviewTarget.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.kicked"));
+        MiniMessageUtil.sendMessage(reviewTarget.getPlotPlayer(),TranslatableCaption.of("mcme.review.kicked"));
         reviewTarget.leaveReviewParty();
         for(ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
-            i.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.kicked_notif"),  Template.of("player", reviewTarget.getPlotPlayer().getName()));
+            MiniMessageUtil.sendMessage(i.getPlotPlayer(),TranslatableCaption.of("mcme.review.kicked_notif"),  MiniMessageUtil.templateOf("player", reviewTarget.getPlotPlayer().getName()));
         }
     }
 
@@ -186,11 +187,11 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (!reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
         reviewPlayer.teleportToReviewPlot(reviewPlayer.getReviewParty().getCurrentReviewPlot());
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.tp"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.tp"));
     }
 
     /**
@@ -202,21 +203,21 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (!reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
         if (!reviewPlayer.isReviewPartyLeader()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_leader"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_leader"));
             return;
         }
         if (!(reviewPlayer.getReviewParty().hasGivenFeedback() && reviewPlayer.getReviewParty().hasGivenRating())) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_everyone_finished"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_everyone_finished"));
             return;
         }
         if (reviewPlayer.getReviewParty().getNextReviewPlot() == null) {
             for(ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
-                i.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.finished"));
-                i.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.end"));
+                MiniMessageUtil.sendMessage(i.getPlotPlayer(),TranslatableCaption.of("mcme.review.finished"));
+                MiniMessageUtil.sendMessage(i.getPlotPlayer(),TranslatableCaption.of("mcme.review.end"));
             }
             reviewPlayer.getReviewParty().stopReviewParty();
             return;
@@ -235,7 +236,7 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (!reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
 //        if (reviewPlayer.getReviewParty().getCurrentPlot().isOwner(player.getUniqueId())) {
@@ -243,33 +244,33 @@ public class ReviewCommands {
 //            return;
 //        }
         if (reviewPlayer.hasAlreadyReviewed(reviewPlayer.getReviewParty().getCurrentReviewPlot())) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewed"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.already_reviewed"));
             return;
         }
         if (!reviewPlayer.hasGivenFeedback()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.first_feedback"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.first_feedback"));
             return;
         }
         if (0 > rating || rating > 100) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.rating_range"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.rating_range"));
             return;
         }
 
         if (reviewPlayer.hasGivenRating()) {
             reviewPlayer.setPlotRating(rating);
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.rating_update"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.rating_update"));
             return;
         }
         reviewPlayer.setPlotRating(rating);
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.rating"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.rating"));
         if (reviewPlayer.getReviewParty().hasGivenRating() && reviewPlayer.getReviewParty().hasGivenFeedback()) {
             reviewPlayer.getReviewParty().goNextPlot();
             for (ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
-                i.getPlotPlayer().sendMessage(TranslatableCaption.of("mcme.review.next"));
+                MiniMessageUtil.sendMessage(i.getPlotPlayer(),TranslatableCaption.of("mcme.review.next"));
             }
             return;
         }
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.waiting"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.waiting"));
     }
 
     /**
@@ -282,7 +283,7 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (!reviewPlayer.isReviewing()) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.error.review.not_reviewing"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.error.review.not_reviewing"));
             return;
         }
 //        if (reviewPlayer.getReviewParty().getCurrentPlot().isOwner(player.getUniqueId())) {
@@ -290,16 +291,16 @@ public class ReviewCommands {
 //            return;
 //        }
         if (reviewPlayer.hasAlreadyReviewed(reviewPlayer.getReviewParty().getCurrentReviewPlot())) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewed"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.already_reviewed"));
             return;
         }
         if (reviewPlayer.hasGivenFeedback()) {
             reviewPlayer.setPlotFeedback(feedback);
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.feedback_updated"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.feedback_updated"));
             return;
         }
         reviewPlayer.setPlotFeedback(feedback);
-        plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.feedback"));
+        MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.feedback"));
     }
 
     /**
@@ -311,25 +312,25 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot currentPlot = plotPlayer.getCurrentPlot();
         if (plotPlayer.getCurrentPlot() == null) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.not_in_plot"));
             return;
         }
         if (!currentPlot.isOwner(player.getUniqueId())) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.is_not_plot_owner"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.is_not_plot_owner"));
             return;
         }
         if (ReviewStatusFlag.isBeingReviewed(currentPlot)){
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_being_reviewed_this"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.submit_being_reviewed_this"));
             return;
         }
         if( ReviewStatusFlag.isLocked(currentPlot) || ReviewStatusFlag.isAccepted(currentPlot)) {
-            plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_accepted"));
+            MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.submit_accepted"));
         }
         long currentTimeSec = System.currentTimeMillis() / 1000;
         for (Plot plot : plotPlayer.getPlots()) {
             Set plotFlags = plot.getFlags();
             if (plotFlags.contains(ReviewPlot.ReviewStatus.BEING_REVIEWED) || plotFlags.contains(ReviewPlot.ReviewStatus.REJECTED)) {
-                plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_being_reviewed_other"));
+                MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.error.submit_being_reviewed_other"));
                 return;
             }
             if (plotFlags.contains(ReviewPlot.ReviewStatus.LOCKED)) {
@@ -339,16 +340,16 @@ public class ReviewCommands {
                     currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
                     ReviewPlot reviewPlot = new ReviewPlot(currentPlot);
                     reviewPlot.submitReviewPlot(currentPlot);
-                    plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+                    MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.submit"));
                     return;
                 }
-                else plotPlayer.sendMessage(TranslatableCaption.of("mcme.error.submit_too_early"));
+                else MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.error.submit_too_early"));
             }
             if (!plotFlags.contains(ReviewPlot.ReviewStatus.BEING_REVIEWED)) {
                 currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
                 ReviewPlot reviewPlot = new ReviewPlot(currentPlot);
                 reviewPlot.submitReviewPlot(currentPlot);
-                plotPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+                MiniMessageUtil.sendMessage(plotPlayer,TranslatableCaption.of("mcme.review.submit"));
                 return;
             }
         }
