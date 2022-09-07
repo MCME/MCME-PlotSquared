@@ -1,13 +1,15 @@
 package com.mcmiddleearth.plotsquared.review;
 
 import com.mcmiddleearth.plotsquared.MCMEP2;
-import com.mcmiddleearth.plotsquared.plotflag.ReviewDataFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
 import com.mcmiddleearth.plotsquared.util.FileManagement;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotId;
 import com.plotsquared.core.plot.flag.PlotFlag;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
+import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.io.Serializable;
@@ -19,13 +21,13 @@ public class ReviewPlot implements Serializable {
     private final String stringPlotId;
     private HashMap<java.util.UUID, Integer> playerReviewIteration;
     private HashSet<Integer> plotTempRatings;
-    private LinkedList<String> plotFinalFeedback;
-    private LinkedList<Long> plotFinalRatings;
-    private LinkedList<Long> plotFinalReviewTimeStamps;
+    private ArrayList<String> plotFinalFeedback;
+    private ArrayList<Long> plotFinalRatings;
+    private ArrayList<Long> plotFinalReviewTimeStamps;
 
     public enum ReviewStatus{
-        BEING_REVIEWED,
         NOT_BEING_REVIEWED,
+        BEING_REVIEWED,
         ACCEPTED,
         REJECTED,
         LOCKED,
@@ -39,9 +41,9 @@ public class ReviewPlot implements Serializable {
             this.stringPlotId = plot.getId().toString();
             this.playerReviewIteration = new HashMap<>();
             this.plotTempRatings = new HashSet<>();
-            this.plotFinalFeedback = new LinkedList<>();
-            this.plotFinalRatings = new LinkedList<>();
-            this.plotFinalReviewTimeStamps = new LinkedList<>();
+            this.plotFinalFeedback = new ArrayList<>();
+            this.plotFinalRatings = new ArrayList<>();
+            this.plotFinalReviewTimeStamps = new ArrayList<>();
         }
         else{
             this.stringPlotId = reviewPlot.stringPlotId;
@@ -94,7 +96,10 @@ public class ReviewPlot implements Serializable {
                 this.plotTempRatings.clear();
                 this.saveReviewPlotData();
                 //set reviewFlag to false (end review process)
-                this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
+                if(Bukkit.getPlayer(this.getPlot().getOwner()).isOnline()) {
+                    this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
+                }
+                else this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
             }
             case ACCEPTED -> {
                 getLogger().info("Accepted");
@@ -108,12 +113,9 @@ public class ReviewPlot implements Serializable {
                 long rating = Math.floorDiv(ratingSum, count);
                 plotFinalRatings.add(rating);
                 plotFinalReviewTimeStamps.add(System.currentTimeMillis());
-                List<Long> reviewDataList = new ArrayList<>();
-                reviewDataList.addAll(plotFinalRatings);
-                reviewDataList.addAll(plotFinalReviewTimeStamps);
                 //save data to flag and delete data from disk
-                PlotFlag<?, ?> reviewDataFlag = plot.getFlagContainer().getFlag(ReviewDataFlag.class).createFlagInstance(reviewDataList);
-                plot.setFlag(reviewDataFlag);
+                plot.setFlag(new ReviewRatingDataFlag(plotFinalRatings));
+                plot.setFlag(new ReviewTimeDataFlag(plotFinalReviewTimeStamps));
                 this.deleteReviewPlotData();
                 //set plot to done
                 long flagValue = System.currentTimeMillis() / 1000;
@@ -134,7 +136,7 @@ public class ReviewPlot implements Serializable {
     }
 
     public void submitReviewPlot(Plot plot) {
-        File file = new File(MCMEP2.getReviewPlotDirectory().toString() + plot.getId().toString() + ".yml");
+        File file = new File(MCMEP2.getReviewPlotDirectory() , plot.getId().toString() + ".yml");
         FileManagement.writeObjectToFile(this, file);
         ReviewAPI.addReviewPlot(this.getPlotId(), this);
     }
@@ -144,14 +146,13 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     private boolean passedTimeThreshold() {
-        if(plotTempRatings.size()<1) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
-        final int DAYINGMILISEC = 60000;//made one minute for debug reasons 86400000
-//        if (plotFinalReviewTimeStamps.size() == 0){
-//            return false;
-//        }
-//        else;
-//            return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1) <= ((System.currentTimeMillis() ) - DAYINSECONDS);
-        return true;
+        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
+        final int DAYINGMILISEC = 86400000;//made one minute for debug reasons 86400000
+        if (plotFinalReviewTimeStamps.size() == 0){
+            return false;
+        }
+        else;
+            return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1) <= ((System.currentTimeMillis() ) - DAYINGMILISEC);
     }
 
     /**
@@ -159,7 +160,7 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     public boolean passedRatingThreshold(){
-        if(plotTempRatings.size()<1) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
+        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
         int ratingSum = 0;
         int count = 0;
         for(int i : plotTempRatings){
@@ -167,15 +168,7 @@ public class ReviewPlot implements Serializable {
             count += 1;
         }
         int rating = Math.floorDiv(ratingSum, count);
-        if (plotFinalRatings.size() == 0){
-            return rating >= 75;
-        }
-        else {
-            int plotFinalReviewTimes = plotFinalRatings.size() - 1;
-            int leniencyFactor = (plotFinalReviewTimes) * 5;
-            if (plotFinalReviewTimes > 4) leniencyFactor = 15;
-            return rating >= 75 - (leniencyFactor);
-        }
+        return rating >= 50;
     }
 
     /**
@@ -205,29 +198,32 @@ public class ReviewPlot implements Serializable {
     }
 
     public void saveReviewPlotData() {
-        File file = new File(MCMEP2.getReviewPlotDirectory().toString() + File.separator + stringPlotId + ".yml");
+        File file = new File(MCMEP2.getReviewPlotDirectory(), File.separator + stringPlotId + ".yml");
         FileManagement.writeObjectToFile(this, file);
     }
 
     public ReviewPlot loadReviewPlotData() {
-        File file = new File(MCMEP2.getReviewPlotDirectory().toString() + File.separator + stringPlotId + ".yml");
+        File file = new File(MCMEP2.getReviewPlotDirectory(), File.separator + stringPlotId + ".yml");
         if (!file.exists()) return null;
         else return FileManagement.readObjectFromFile(file);
     }
 
     public static ReviewPlot loadReviewPlotData(Plot plot){
         String plotId = plot.getId().toString();
-        File file = new File(MCMEP2.getReviewPlotDirectory().toString() + File.separator + plotId + ".yml");
+        File file = new File(MCMEP2.getReviewPlotDirectory(), File.separator + plotId + ".yml");
         if (!file.exists()) return null;
         else return FileManagement.readObjectFromFile(file);
     }
 
     public void deleteReviewPlotData() {
-        File reviewPlotYamlFile = new File(MCMEP2.getReviewPlotDirectory().toString() + File.separator + stringPlotId + ".yml");
-        if (reviewPlotYamlFile.delete()) {
-            getLogger().info("Deleted the file: " + reviewPlotYamlFile.getName());
+        File file = new File(MCMEP2.getReviewPlotDirectory(), stringPlotId + ".yml");
+        if(!file.exists()){
+            return;
+        }
+        if (file.delete()) {
+            getLogger().info("Deleted the file: " + file.getName());
         } else {
-            getLogger().info("Failed to delete the file.");
+            getLogger().info("Failed to delete: " + file.getName());
         }
     }
 
@@ -255,6 +251,17 @@ public class ReviewPlot implements Serializable {
         return false;
     }
 
+    public void deleteReview(){
+        ReviewAPI.removeReviewPlot(this);
+        plotFinalFeedback.clear();
+        plotFinalRatings.clear();
+        plotFinalReviewTimeStamps.clear();
+        plotTempRatings.clear();
+        this.deleteReviewPlotData();
+        this.getPlot().removeFlag(ReviewRatingDataFlag.class);
+        this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
+    }
+
     public int getReviewIteration(){
         if (plotFinalRatings.isEmpty()) return 0;
         else return plotFinalRatings.size();
@@ -268,15 +275,21 @@ public class ReviewPlot implements Serializable {
         return plotTempRatings;
     }
 
-    public LinkedList<Long> getPlotFinalRatings() {
+    public List<Long> getFinalRatings() {
+        if (this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.ACCEPTED || this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.LOCKED){
+            return this.getPlot().getFlag(ReviewRatingDataFlag.class);
+        }
         return plotFinalRatings;
     }
 
-    public LinkedList<Long> getPlotFinalReviewTimeStamps() {
+    public List<Long> getFinalReviewTimeStamps() {
+        if (this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.ACCEPTED || this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.LOCKED){
+            return this.getPlot().getFlag(ReviewTimeDataFlag.class);
+        }
         return plotFinalReviewTimeStamps;
     }
 
-    public LinkedList<String> getPlotFinalFeedback() {
+    public List<String> getPlotFinalFeedback() {
         return plotFinalFeedback;
     }
 

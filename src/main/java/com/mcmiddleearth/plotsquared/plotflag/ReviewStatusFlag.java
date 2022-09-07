@@ -9,8 +9,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class ReviewStatusFlag extends PlotFlag<ReviewPlot.ReviewStatus, ReviewStatusFlag> {
 
-    public static final ReviewStatusFlag BEING_REVIEWED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.BEING_REVIEWED);
     public static final ReviewStatusFlag NOT_BEING_REVIEWED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.NOT_BEING_REVIEWED);
+    public static final ReviewStatusFlag BEING_REVIEWED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.BEING_REVIEWED);
     public static final ReviewStatusFlag ACCEPTED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.ACCEPTED);
     public static final ReviewStatusFlag REJECTED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.REJECTED);
     public static final ReviewStatusFlag LOCKED_FLAG = new ReviewStatusFlag(ReviewPlot.ReviewStatus.LOCKED);
@@ -18,8 +18,8 @@ public class ReviewStatusFlag extends PlotFlag<ReviewPlot.ReviewStatus, ReviewSt
     @Override
     protected ReviewStatusFlag flagOf(ReviewPlot.@NonNull ReviewStatus value) {
         return switch (value) {
-            case BEING_REVIEWED -> BEING_REVIEWED_FLAG;
             case NOT_BEING_REVIEWED -> NOT_BEING_REVIEWED_FLAG;
+            case BEING_REVIEWED -> BEING_REVIEWED_FLAG;
             case ACCEPTED -> ACCEPTED_FLAG;
             case REJECTED -> REJECTED_FLAG;
             case LOCKED -> LOCKED_FLAG;
@@ -32,12 +32,9 @@ public class ReviewStatusFlag extends PlotFlag<ReviewPlot.ReviewStatus, ReviewSt
     }
 
     public static boolean isAccepted(Plot plot){
-        return plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.ACCEPTED;
+        return plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.ACCEPTED || plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.LOCKED;
     }
 
-    public static boolean isLocked(Plot plot){
-        return plot.getFlag(ReviewStatusFlag.class) == ReviewPlot.ReviewStatus.LOCKED;
-    }
     @Override
     public String getExample() {
         return "being_reviewed";
@@ -51,12 +48,12 @@ public class ReviewStatusFlag extends PlotFlag<ReviewPlot.ReviewStatus, ReviewSt
     @Override
     public ReviewStatusFlag parse(@NonNull String input) {
         return switch (input.toLowerCase()) {
+            case "never_reviewed" -> flagOf(ReviewPlot.ReviewStatus.NOT_BEING_REVIEWED);
             case "being_reviewed" -> flagOf(ReviewPlot.ReviewStatus.BEING_REVIEWED);
-            case "not_being_reviewed" -> flagOf(ReviewPlot.ReviewStatus.NOT_BEING_REVIEWED);
             case "accepted" -> flagOf(ReviewPlot.ReviewStatus.ACCEPTED);
             case "rejected" -> flagOf(ReviewPlot.ReviewStatus.REJECTED);
-            case "too_early" -> null;
-            case "locked" -> null;
+            case "too_early" -> flagOf(ReviewPlot.ReviewStatus.TOO_EARLY);
+            case "locked" -> flagOf(ReviewPlot.ReviewStatus.LOCKED);
             default -> throw new IllegalArgumentException();
         };
     }
