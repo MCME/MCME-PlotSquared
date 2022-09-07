@@ -9,7 +9,7 @@ public class Build {
      * @param location location where player tries to build
      * @return Whether the player has permission to build there
      */
-    public boolean hasPlotBuildPermission(Player player, org.bukkit.Location location) {
+    public boolean hasBuildPermission(Player player, org.bukkit.Location location) {
         com.plotsquared.core.location.Location plotSquaredLocation = com.plotsquared.core.location.Location.at(location.getWorld().toString(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
         if (plotSquaredLocation.isPlotArea()) {
             if (player.hasPermission("mcmep2.build.everywhere")) return true;
