@@ -23,7 +23,7 @@ public final class MCMEP2 extends JavaPlugin {
 
     private static MCMEP2 instance;
     private static PlotAPI plotAPI;
-    private static String plotWorld = "Plots";
+    private static String plotWorld = "Test";
 
     private static File pluginDirectory;
     private static File reviewPlotDirectory;
