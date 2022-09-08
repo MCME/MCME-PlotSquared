@@ -14,6 +14,34 @@ public class ReviewAPI {
     private static HashMap<PlotId, ReviewPlot> reviewPlots = new HashMap<>();
     private static HashMap<UUID, UUID> invites = new HashMap<>(); // implement invites
 
+    public static HashMap<Player, ReviewAPI.storeData> commandConfirm = new HashMap<>();
+
+    public enum ReviewCommands {
+        reviewClear,
+        reviewDelete,
+        reviewRestart,
+        reviewConfirm
+    }
+
+
+    public static class storeData {
+        public Plot storedPlot;
+        public ReviewCommands storedCommand;
+
+        public storeData(Plot plot, ReviewCommands storedCommand) {
+            this.storedPlot = plot;
+            this.storedCommand = storedCommand;
+        }
+
+        public ReviewCommands getStoredCommand() {
+            return storedCommand;
+        }
+
+        public Plot getStoredPlot(){
+            return storedPlot;
+        }
+    }
+
     public static HashMap<UUID, ReviewPlayer> getReviewerPlayers() {
         return reviewerPlayers;
     }

@@ -21,36 +21,22 @@ import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import com.plotsquared.core.util.task.TaskManager;
 import me.gleeming.command.Command;
 import me.gleeming.command.paramter.Param;
-import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
+import static com.mcmiddleearth.plotsquared.review.ReviewAPI.ReviewCommands.*;
+import static com.mcmiddleearth.plotsquared.review.ReviewAPI.commandConfirm;
 import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.templateOf;
 import static org.bukkit.Bukkit.getLogger;
 
 public class ReviewCommands {
-
-    public enum storedCommands {
-        reviewClear,
-        reviewDelete,
-        reviewRestart
-    }
-
-    private class storeData {
-        public Plot storedPlot;
-        public storedCommands storedCommand;
-
-        public storeData(Plot plot, storedCommands storedCommand) {
-            this.storedPlot = plot;
-            this.storedCommand = storedCommand;
-        }
-    }
-
-    public HashMap<Player, storeData> hashmap;
     /**
      * Start a ReviewParty.
      *
@@ -558,48 +544,44 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot plot = plotPlayer.getCurrentPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!hashmap.containsKey(player) || hashmap.get(player).storedCommand != storedCommands.reviewDelete) {
-            if (plot == null) {
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+        if (plot == null) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+            return;
+        }
+        if (!commandConfirm.containsKey(player)) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_delete"));
+            commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewDelete));
+            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), () -> commandConfirm.remove(player), 20 * 10);
+            return;
+        }
+        if (commandConfirm.get(player).storedCommand == reviewConfirm) {
+            plot = commandConfirm.get(player).storedPlot;
+            commandConfirm.remove(player);
+
+            ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+            if (reviewPlot.isBeingReviewed()) {
+                player.sendMessage("This is currently being reviewed, try again later");
                 return;
             }
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_delete"));
-            hashmap.put(player, new storeData(plot, storedCommands.reviewDelete));
-            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
-                @Override
-                public void run() {
-                    hashmap.remove(player);
-                }
-            }, 20 * 10);
-            return;
+            reviewPlot.deleteReview();
+            Plot finalPlot = plot;
+            final long start = System.currentTimeMillis();
+            if (Settings.Teleport.ON_DELETE) {
+                finalPlot.getPlayersInPlot().forEach(playerInPlot -> finalPlot.teleportPlayer(playerInPlot, TeleportCause.COMMAND_DELETE,
+                        result -> {
+                        }
+                ));
+            }
+            PlotPlayer<?> plotOwner = BukkitUtil.adapt((Player) Bukkit.getOfflinePlayer(finalPlot.getOwner()));
+            boolean result = finalPlot.getPlotModificationManager().deletePlot(plotOwner, () -> {
+                finalPlot.removeRunning();
+                reviewPlayer.sendMessage(
+                        TranslatableCaption.of("working.deleting_done"),
+                        templateOf("amount", String.valueOf(System.currentTimeMillis() - start)),
+                        templateOf("plot", finalPlot.getId().toString())
+                );
+            });
         }
-        if (hashmap.get(player).storedCommand == storedCommands.reviewDelete) {
-            plot = hashmap.get(player).storedPlot;
-            hashmap.remove(player);
-        }
-        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
-        if(reviewPlot.isBeingReviewed()){
-            player.sendMessage("This is currently being reviewed, try again later");
-            return;
-        }
-        reviewPlot.deleteReview();
-        Plot finalPlot = plot;
-        final long start = System.currentTimeMillis();
-        if (Settings.Teleport.ON_DELETE) {
-            finalPlot.getPlayersInPlot().forEach(playerInPlot -> finalPlot.teleportPlayer(playerInPlot, TeleportCause.COMMAND_DELETE,
-                    result -> {
-                    }
-            ));
-        }
-        PlotPlayer<?> plotOwner = BukkitUtil.adapt((Player) Bukkit.getOfflinePlayer(finalPlot.getOwner()));
-        boolean result = finalPlot.getPlotModificationManager().deletePlot(plotOwner, () -> {
-            finalPlot.removeRunning();
-            plotPlayer.sendMessage(
-                    TranslatableCaption.of("working.deleting_done"),
-                    Template.of("amount", String.valueOf(System.currentTimeMillis() - start)),
-                    Template.of("plot", finalPlot.getId().toString())
-            );
-        });
     }
 
     @Command(names = {"review clear"}, permission = "mcmep2.review.mod", playerOnly = true)
@@ -607,61 +589,57 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot plot = plotPlayer.getCurrentPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!hashmap.containsKey(player) || hashmap.get(player).storedCommand != storedCommands.reviewClear) {
-            if (plot == null) {
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+        if (plot == null) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+            return;
+        }
+        if (!commandConfirm.containsKey(player)) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_clear"));
+            commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewClear));
+            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), () -> commandConfirm.remove(player), 20 * 10);
+            return;
+        }
+        if (commandConfirm.get(player).storedCommand == reviewConfirm) {
+            plot = commandConfirm.get(player).storedPlot;
+            commandConfirm.remove(player);
+
+            ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+            if (reviewPlot.isBeingReviewed()) {
+                player.sendMessage("This is currently being reviewed, try again later");
                 return;
             }
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_clear"));
-            hashmap.put(player, new storeData(plot, storedCommands.reviewClear));
-            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
-                @Override
-                public void run() {
-                    hashmap.remove(player);
-                }
-            }, 20 * 10);
-            return;
-        }
-        if (hashmap.get(player).storedCommand == storedCommands.reviewClear) {
-            plot = hashmap.get(player).storedPlot;
-            hashmap.remove(player);
-        }
-        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
-        if(reviewPlot.isBeingReviewed()){
-            player.sendMessage("This is currently being reviewed, try again later");
-            return;
-        }
-        reviewPlot.deleteReview();
-        Plot finalPlot = plot;
-        PlotPlayer<?> plotOwner = BukkitUtil.adapt((Player) Bukkit.getOfflinePlayer(finalPlot.getOwner()));
-        BackupManager.backup(plotOwner, plot, () -> {
-            final long start = System.currentTimeMillis();
-            boolean result = finalPlot.getPlotModificationManager().clear(true, false, plotOwner, () -> {
-                finalPlot.getPlotModificationManager().unlink();
-                TaskManager.runTask(() -> {
-                    finalPlot.removeRunning();
-                    // If the state changes, then mark it as no longer done
-                    if (DoneFlag.isDone(finalPlot)) {
-                        PlotFlag<?, ?> plotFlag =
-                                finalPlot.getFlagContainer().getFlag(DoneFlag.class);
-                    }
-                    if (!finalPlot.getFlag(AnalysisFlag.class).isEmpty()) {
-                        PlotFlag<?, ?> plotFlag =
-                                finalPlot.getFlagContainer().getFlag(AnalysisFlag.class);
-                    }
-                    plotPlayer.sendMessage(
-                            TranslatableCaption.of("working.clearing_done"),
-                            Template.of("amount", String.valueOf(System.currentTimeMillis() - start)),
-                            Template.of("plot", finalPlot.getId().toString())
-                    );
+            reviewPlot.deleteReview();
+            Plot finalPlot = plot;
+            PlotPlayer<?> plotOwner = BukkitUtil.adapt((Player) Bukkit.getOfflinePlayer(finalPlot.getOwner()));
+            BackupManager.backup(plotOwner, plot, () -> {
+                final long start = System.currentTimeMillis();
+                boolean result = finalPlot.getPlotModificationManager().clear(true, false, plotOwner, () -> {
+                    finalPlot.getPlotModificationManager().unlink();
+                    TaskManager.runTask(() -> {
+                        finalPlot.removeRunning();
+                        // If the state changes, then mark it as no longer done
+                        if (DoneFlag.isDone(finalPlot)) {
+                            PlotFlag<?, ?> plotFlag =
+                                    finalPlot.getFlagContainer().getFlag(DoneFlag.class);
+                        }
+                        if (!finalPlot.getFlag(AnalysisFlag.class).isEmpty()) {
+                            PlotFlag<?, ?> plotFlag =
+                                    finalPlot.getFlagContainer().getFlag(AnalysisFlag.class);
+                        }
+                        reviewPlayer.sendMessage(
+                                TranslatableCaption.of("working.clearing_done"),
+                                templateOf("amount", String.valueOf(System.currentTimeMillis() - start)),
+                                templateOf("plot", finalPlot.getId().toString())
+                        );
+                    });
                 });
+                if (!result) {
+                    reviewPlayer.sendMessage(TranslatableCaption.of("errors.wait_for_timer"));
+                } else {
+                    finalPlot.addRunning();
+                }
             });
-            if (!result) {
-                plotPlayer.sendMessage(TranslatableCaption.of("errors.wait_for_timer"));
-            } else {
-                finalPlot.addRunning();
-            }
-        });
+        }
     }
 
     @Command(names = {"review restart"}, permission = "mcmep2.review.admin", playerOnly = true)
@@ -669,40 +647,49 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot plot = plotPlayer.getCurrentPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!hashmap.containsKey(player) || hashmap.get(player).storedCommand != storedCommands.reviewRestart) {
-            if (plot == null) {
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+        if (plot == null) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+            return;
+        }
+        if (!commandConfirm.containsKey(player)) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_restart"));
+            commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewRestart));
+            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), () -> commandConfirm.remove(player), 20 * 10);
+            return;
+        }
+        if (commandConfirm.get(player).storedCommand == reviewConfirm) {
+            plot = commandConfirm.get(player).storedPlot;
+            commandConfirm.remove(player);
+
+            ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+            if (reviewPlot.isBeingReviewed()) {
+                player.sendMessage("This is currently being reviewed, try again later");
                 return;
             }
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_restart"));
-            hashmap.put(player, new storeData(plot, storedCommands.reviewRestart));
-            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
-                @Override
-                public void run() {
-                    hashmap.remove(player);
-                }
-            }, 20 * 10);
-            return;
+            reviewPlot.deleteReview();
         }
-        if (hashmap.get(player).storedCommand == storedCommands.reviewRestart) {
-            plot = hashmap.get(player).storedPlot;
-            hashmap.remove(player);
-        }
-        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
-        if(reviewPlot.isBeingReviewed()){
-            player.sendMessage("This is currently being reviewed, try again later");
-            return;
-        }
-        reviewPlot.deleteReview();
     }
 
     @Command(names = {"review confirm"}, permission = "mcmep2.review.mod", playerOnly = true)
     public void confirmReview(Player player) {
-        switch (hashmap.get(player).storedCommand){
-            case reviewClear -> clearReview(player);
-            case reviewDelete -> deleteReview(player);
-            case reviewRestart -> restartReview(player);
+        if(commandConfirm.containsKey(player)){
+            ReviewAPI.ReviewCommands storedCommand = commandConfirm.get(player).getStoredCommand();
+            Plot plot = commandConfirm.get(player).getStoredPlot();
+            if (storedCommand == reviewClear) {
+                commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewConfirm));
+                clearReview(player);
+                return;
+            } else if (storedCommand == reviewDelete) {
+                commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewConfirm));
+                deleteReview(player);
+                return;
+            } else if (storedCommand == reviewRestart) {
+                commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewConfirm));
+                restartReview(player);
+                return;
+            }
         }
+        player.sendMessage("nothing to confirm");
     }
 }
 
