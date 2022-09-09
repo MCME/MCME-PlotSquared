@@ -26,28 +26,43 @@ public class PlayerListener implements Listener {
         for (Plot i : plotPlayer.getPlots()){
             switch (i.getFlag(ReviewStatusFlag.class)) {
                 case ACCEPTED -> {
-                    i.setFlag(ReviewStatusFlag.LOCKED_FLAG);
-                    String rating = String.valueOf(ReviewAPI.getReviewPlot(i).getFinalRatings().get(ReviewAPI.getReviewPlot(i).getFinalRatings().size()-1));
-                    ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(playerJoinEvent.getPlayer());
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.header"));
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_accepted"), templateOf("rating", rating));
-                    int allowedPlots = plotPlayer.getAllowedPlots();
-                    if(allowedPlots == 1) reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plot"), templateOf("amount", String.valueOf(allowedPlots)));
-                    else reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
+                        @Override
+                        public void run() {
+                            i.setFlag(ReviewStatusFlag.LOCKED_FLAG);
+                            String rating = String.valueOf(ReviewAPI.getReviewPlot(i).getFinalRatings().get(ReviewAPI.getReviewPlot(i).getFinalRatings().size() - 1));
+                            ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(playerJoinEvent.getPlayer());
+                            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.header"));
+                            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_accepted"), templateOf("rating", rating));
+                            int allowedPlots = plotPlayer.getAllowedPlots();
+                            if (allowedPlots == 1)
+                                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plot"), templateOf("amount", String.valueOf(allowedPlots)));
+                            else
+                                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
+                            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
+                        }
+                    }, 20 * 1);
                 }
                 case REJECTED -> {
-                    i.setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
-                    String rating = String.valueOf(ReviewAPI.getReviewPlot(i).getFinalRatings().get(ReviewAPI.getReviewPlot(i).getFinalRatings().size()-1));
-                    ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(playerJoinEvent.getPlayer());
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.header"));
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_rejected"), templateOf("rating", rating));
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_rejected_2"));
-                    int allowedPlots = plotPlayer.getAllowedPlots();
-                    if(allowedPlots == 0) reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.no_plot"));
-                    if(allowedPlots == 1) reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plot"), templateOf("amount", String.valueOf(allowedPlots)));
-                    else reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
+                        @Override
+                        public void run() {
+                            i.setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
+                            String rating = String.valueOf(ReviewAPI.getReviewPlot(i).getFinalRatings().get(ReviewAPI.getReviewPlot(i).getFinalRatings().size() - 1));
+                            ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(playerJoinEvent.getPlayer());
+                            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.header"));
+                            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_rejected"), templateOf("rating", rating));
+                            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_rejected_2"));
+                            int allowedPlots = plotPlayer.getAllowedPlots();
+                            if (allowedPlots == 0)
+                                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.no_plot"));
+                            if (allowedPlots == 1)
+                                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plot"), templateOf("amount", String.valueOf(allowedPlots)));
+                            else
+                                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
+                            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
+                        }
+                    }, 20 * 1);
                 }
             }
         }

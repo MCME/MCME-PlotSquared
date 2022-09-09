@@ -286,6 +286,7 @@ public class ReviewCommands {
                     i.sendMessage(TranslatableCaption.of("mcme.review.finished"));
                 }
                 reviewPlayer.getReviewParty().goNextPlot();
+                return;
             }
         }
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.waiting"));
@@ -348,23 +349,42 @@ public class ReviewCommands {
             return;
         }
         final long THREEDAYSINMILISEC = 86400000 * 3;//made one minute for debug reasons 86400000 * 3
+        if(plotPlayer.getPlotCount() == 1){
+            long timestamp = currentPlot.getTimestamp();
+            if (System.currentTimeMillis() + THREEDAYSINMILISEC - timestamp <= 0) {
+                ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
+                currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
+                currentReviewPlot.submitReviewPlot(currentPlot);
+                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+                return;
+            }
+            long durationInMillis = (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC );
+            String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
+            String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours, ";
+            String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " and days";
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
+            return;
+        }
         for (Plot plot : plotPlayer.getPlots()) {
             if(ReviewStatusFlag.isBeingReviewed(plot)) {
                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_being_reviewed_other"));
                 return;
             }
-            if (!plot.getFlag(ReviewTimeDataFlag.class).isEmpty()) {
-                ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(currentPlot);
-                long timeSinceLastReview = reviewPlot.getTimeSinceLastReview();
-                if (THREEDAYSINMILISEC - timeSinceLastReview <= 0) {
+            if (!(plot.getFlag(ReviewTimeDataFlag.class).isEmpty())) {
+                ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
+                ReviewPlot acceptedPlot = ReviewAPI.getReviewPlot(plot);
+                long timeSinceLastReview = acceptedPlot.getTimeSinceLastReview();
+                if (System.currentTimeMillis() + THREEDAYSINMILISEC - timeSinceLastReview <= 0) {
                     currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-                    reviewPlot.submitReviewPlot(currentPlot);
+                    currentReviewPlot.submitReviewPlot(currentPlot);
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
                     return;
                 }
-                DateFormat simple = new SimpleDateFormat("mm hh dd");
-                Date date = new Date(System.currentTimeMillis() - timeSinceLastReview);
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", date.toString()));
+                long durationInMillis = (timeSinceLastReview - System.currentTimeMillis() + THREEDAYSINMILISEC );
+                String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
+                String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours, ";
+                String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " and days";
+                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
                 return;
             }
         }
@@ -415,18 +435,18 @@ public class ReviewCommands {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.owner"), templateOf("owner", Bukkit.getOfflinePlayer(plot.getOwner()).getName()));
             List<Long> finalReviewTimeStamps = new ArrayList<>(reviewPlot.getFinalReviewTimeStamps());
             List<Long> finalReviewRatings = new ArrayList<>(reviewPlot.getFinalRatings());
+            String previousRating = "";
+            String notSameRating = "";
             for (int i = 0; i<finalReviewTimeStamps.size(); i++) {
                 Long timeStamp = finalReviewTimeStamps.get(i);
-                Long rating = finalReviewRatings.get(i);
+                String rating = finalReviewRatings.get(i).toString();
                 DateFormat simple = new SimpleDateFormat("dd MMM yyyy");
                 Date date = new Date(timeStamp);
-                Long previousRating = null;
-                String notSameRating = "";
-                if(rating == previousRating) {
-                    notSameRating = rating.toString() + " ";
-                    previousRating = rating;
+                if(rating.equals(notSameRating)) {
+                    notSameRating = previousRating + " ";
                 }
-                else notSameRating = rating.toString();
+                else notSameRating = rating;
+                previousRating = rating;
                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.timestamp_and_rating"), templateOf("timestamp", simple.format(date) + " GMT"), templateOf("rating", notSameRating));
             }
         }
@@ -462,21 +482,23 @@ public class ReviewCommands {
         String lastString = "";
         for(String s: feedback) {
             //check for same message because plotsquared has forced 5sec delay on same messages.
-            if(s.equals(lastString)) s = s+" ";
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback"), templateOf("string", s));
+            String differentString;
+            if(s.equals(lastString)) differentString = lastString + " ";
+            else differentString = s;
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback"), templateOf("string", differentString));
             lastString = s;
         }
         //logic for deciding whether to show back/next arrow
         if(0 < page && page < numberOfPages-1){
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_both"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", "◀ "), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", " ▶"));
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_both"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", " ◀"), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", "▶ "));
             return;
         }
         if(0 == page && page < numberOfPages){
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_next"), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", ""));
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_next"), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", "▶ "));
             return;
         }
         if(0 < page && page == numberOfPages - 1){
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_back"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", ""));
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_back"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", " ◀"));
             return;
         }
         if(0 == page && page == numberOfPages){

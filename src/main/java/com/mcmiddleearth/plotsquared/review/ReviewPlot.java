@@ -146,7 +146,7 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     private boolean passedTimeThreshold() {
-        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
+        if(plotTempRatings.size()<1) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
         final int DAYINGMILISEC = 86400000;//made one minute for debug reasons 86400000
         if (plotFinalReviewTimeStamps.size() == 0){
             return false;
@@ -160,7 +160,7 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     public boolean passedRatingThreshold(){
-        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
+        if(plotTempRatings.size()<1) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
         int ratingSum = 0;
         int count = 0;
         for(int i : plotTempRatings){
@@ -232,6 +232,9 @@ public class ReviewPlot implements Serializable {
     }
 
     public long getTimeSinceLastReview(){
+        if (this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.ACCEPTED || this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.LOCKED){
+            return this.getPlot().getFlag(ReviewTimeDataFlag.class).get(this.getPlot().getFlag(ReviewTimeDataFlag.class).size()-1);
+        }
         if(this.plotFinalReviewTimeStamps.size() == 0) return 0;
         else return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1);
     }

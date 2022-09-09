@@ -13,6 +13,7 @@ import com.plotsquared.core.PlotSquared;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
 import me.gleeming.command.CommandHandler;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -78,6 +79,23 @@ public final class MCMEP2 extends JavaPlugin {
         for(ReviewParty i : ReviewAPI.getReviewParties().values()){
             i.stopReviewParty();
         }
+    }
+
+    /**
+     * Boolean for if a player has permission to build in a given location in a PlotSquared world.
+     * @param player player trying to build
+     * @param location location where player tries to build
+     * @return Whether the player has permission to build there
+     */
+    public boolean hasBuildPermission(Player player, org.bukkit.Location location) {
+        com.plotsquared.core.location.Location plotSquaredLocation = com.plotsquared.core.location.Location.at(location.getWorld().toString(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+        if (plotSquaredLocation.isPlotArea()) {
+            if (player.hasPermission("mcmep2.build.everywhere")) return true;
+            com.plotsquared.core.plot.Plot plot = plotSquaredLocation.getPlot();
+            if (plot != null && (plot.isAdded(player.getUniqueId()) || player.hasPermission("mcmep2.build.all_plots"))) return true;
+            else return false;
+        }
+        else return false;
     }
 
     public static MCMEP2 getInstance() {
