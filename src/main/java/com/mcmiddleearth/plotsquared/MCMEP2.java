@@ -1,6 +1,5 @@
 package com.mcmiddleearth.plotsquared;
 
-import com.mcmiddleearth.plotsquared.listener.P2CommandListener;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
@@ -9,8 +8,8 @@ import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
 import com.mcmiddleearth.plotsquared.util.FileManagement;
 import com.plotsquared.core.PlotAPI;
-import com.plotsquared.core.PlotSquared;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
+import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import me.gleeming.command.CommandHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -24,7 +23,7 @@ public final class MCMEP2 extends JavaPlugin {
 
     private static MCMEP2 instance;
     private static PlotAPI plotAPI;
-    private static String plotWorld = "Plots";
+    private static String plotWorld = "plotsquared";
 
     private static File pluginDirectory;
     private static File reviewPlotDirectory;
@@ -43,7 +42,6 @@ public final class MCMEP2 extends JavaPlugin {
         pm.registerEvents(new com.mcmiddleearth.plotsquared.listener.PlayerListener(), this);
 
         plotAPI = new PlotAPI();
-        PlotSquared.get().getEventDispatcher().registerListener(new P2CommandListener());
         GlobalFlagContainer.getInstance().addFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
         GlobalFlagContainer.getInstance().addFlag(ReviewRatingDataFlag.REVIEW_RATING_DATA_FLAG_NONE);
         GlobalFlagContainer.getInstance().addFlag(ReviewTimeDataFlag.REVIEW_TIME_DATA_FLAG_NONE);
@@ -75,7 +73,7 @@ public final class MCMEP2 extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("onDisable is called!");
-        PlotSquared.get().getEventDispatcher().unregisterListener(new P2CommandListener());
+//        PlotSquared.get().getEventDispatcher().unregisterListener(new P2CommandListener());
         for(ReviewParty i : ReviewAPI.getReviewParties().values()){
             i.stopReviewParty();
         }
@@ -92,11 +90,12 @@ public final class MCMEP2 extends JavaPlugin {
         if (plotSquaredLocation.isPlotArea()) {
             if (player.hasPermission("mcmep2.build.everywhere")) return true;
             com.plotsquared.core.plot.Plot plot = plotSquaredLocation.getPlot();
-            if (plot != null && (plot.isAdded(player.getUniqueId()) || player.hasPermission("mcmep2.build.all_plots"))) return true;
+            if (plot != null && ((plot.isAdded(player.getUniqueId()) && !DoneFlag.isDone(plot)) || player.hasPermission("mcmep2.build.all_plots"))) return true;
             else return false;
         }
         else return false;
     }
+
 
     public static MCMEP2 getInstance() {
         return instance;

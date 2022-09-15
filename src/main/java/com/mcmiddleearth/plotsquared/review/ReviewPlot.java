@@ -1,6 +1,7 @@
 package com.mcmiddleearth.plotsquared.review;
 
 import com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.command.ReviewCommands;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
@@ -10,6 +11,7 @@ import com.plotsquared.core.plot.PlotId;
 import com.plotsquared.core.plot.flag.PlotFlag;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.Serializable;
@@ -100,6 +102,7 @@ public class ReviewPlot implements Serializable {
                     this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
                 }
                 else this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
+                plot.removeFlag(DoneFlag.class);
             }
             case ACCEPTED -> {
                 getLogger().info("Accepted");
@@ -139,6 +142,9 @@ public class ReviewPlot implements Serializable {
         File file = new File(MCMEP2.getReviewPlotDirectory() , plot.getId().toString() + ".yml");
         FileManagement.writeObjectToFile(this, file);
         ReviewAPI.addReviewPlot(this.getPlotId(), this);
+        long flagValue = System.currentTimeMillis() / 1000;
+        PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
+        plot.setFlag(doneFlag);
     }
 
     /**
@@ -263,6 +269,31 @@ public class ReviewPlot implements Serializable {
         this.deleteReviewPlotData();
         this.getPlot().removeFlag(ReviewRatingDataFlag.class);
         this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
+    }
+
+    public void enoughComplexity(Player player, Plot plot) {
+        ReviewCommands.submitForRatingComplexity(player, plot, true);
+        // yeah idk how to do this shit IMPLEMENT LATER
+
+//        Settings.Auto_Clear settings = new Settings.Auto_Clear();
+//        Config.ConfigBlock<Settings.Auto_Clear>  AUTO_CLEAR = new Config.ConfigBlock<>();
+//        final Settings.Auto_Clear doneRequirements = AUTO_CLEAR.get("done");
+//        if (doneRequirements == null) {
+//            ReviewCommands.submitForRatingComplexity(player, true);
+//            plot.removeRunning();
+//        }
+//        else {
+//            HybridUtils hybridUtils = PlotSquared.platform().hybridUtils();
+//            hybridUtils.analyzePlot(plot, new RunnableVal<>() {
+//                @Override
+//                public void run(PlotAnalysis value) {
+//                    plot.removeRunning();
+//                    boolean result =
+//                            value.getComplexity(doneRequirements) <= doneRequirements.THRESHOLD;
+//                    ReviewCommands.submitForRatingComplexity(player, result);
+//                }
+//            });
+//        }
     }
 
     public int getReviewIteration(){

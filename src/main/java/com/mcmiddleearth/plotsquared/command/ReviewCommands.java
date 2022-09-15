@@ -348,6 +348,15 @@ public class ReviewCommands {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_accepted"));
             return;
         }
+        ReviewAPI.getReviewPlot(currentPlot).enoughComplexity(player, currentPlot);
+    }
+    public static void submitForRatingComplexity(Player player, Plot currentPlot, Boolean passed){
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+        if(!passed) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_not_enough_complexity"));
+            return;
+        }
         final long THREEDAYSINMILISEC = 86400000 * 3;//made one minute for debug reasons 86400000 * 3
         if(plotPlayer.getPlotCount() == 1){
             long timestamp = currentPlot.getTimestamp();
@@ -595,7 +604,7 @@ public class ReviewCommands {
                 ));
             }
             PlotPlayer<?> plotOwner = BukkitUtil.adapt((Player) Bukkit.getOfflinePlayer(finalPlot.getOwner()));
-            boolean result = finalPlot.getPlotModificationManager().deletePlot(plotOwner, () -> {
+            finalPlot.getPlotModificationManager().deletePlot(plotOwner, () -> {
                 finalPlot.removeRunning();
                 reviewPlayer.sendMessage(
                         TranslatableCaption.of("working.deleting_done"),
