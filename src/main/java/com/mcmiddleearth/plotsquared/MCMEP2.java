@@ -7,10 +7,19 @@ import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
 import com.mcmiddleearth.plotsquared.util.FileManagement;
+import com.plotsquared.bukkit.player.BukkitPlayer;
+import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.PlotAPI;
+import com.plotsquared.core.configuration.Settings;
+import com.plotsquared.core.configuration.caption.TranslatableCaption;
+import com.plotsquared.core.permissions.Permission;
+import com.plotsquared.core.plot.Plot;
+import com.plotsquared.core.plot.PlotArea;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
+import com.plotsquared.core.util.Permissions;
 import me.gleeming.command.CommandHandler;
+import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
@@ -86,14 +95,54 @@ public final class MCMEP2 extends JavaPlugin {
      * @return Whether the player has permission to build there
      */
     public boolean hasBuildPermission(Player player, org.bukkit.Location location) {
-        com.plotsquared.core.location.Location plotSquaredLocation = com.plotsquared.core.location.Location.at(location.getWorld().toString(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
-        if (plotSquaredLocation.isPlotArea()) {
-            if (player.hasPermission("mcmep2.build.everywhere")) return true;
-            com.plotsquared.core.plot.Plot plot = plotSquaredLocation.getPlot();
-            if (plot != null && ((plot.isAdded(player.getUniqueId()) && !DoneFlag.isDone(plot)) || player.hasPermission("mcmep2.build.all_plots"))) return true;
-            else return false;
+        com.plotsquared.core.location.Location plotSquaredLocation = BukkitUtil.adapt(location);
+        PlotArea area = plotSquaredLocation.getPlotArea();
+        if (area == null) {
+            return false;
         }
-        else return false;
+        if (player.hasPermission("mcmep2.build.everywhere")) {
+            return true;
+        }
+        Plot plot = area.getPlot(plotSquaredLocation);
+        BukkitPlayer pp = BukkitUtil.adapt(player);
+        if (plot != null){
+            if (area.notifyIfOutsideBuildArea(pp, plotSquaredLocation.getY())) {
+                return false;
+            }
+            if (!plot.hasOwner()) {
+                if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_UNOWNED)) {
+                    pp.sendMessage(
+                            TranslatableCaption.of("permission.no_permission_event"),
+                            Template.of("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_UNOWNED))
+                    );
+                    return false;
+                }
+            } else if (!plot.isAdded(pp.getUUID())) {
+                if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_OTHER)) {
+                    pp.sendMessage(
+                            TranslatableCaption.of("permission.no_permission_event"),
+                            Template.of("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_OTHER))
+                    );
+//                    plot.debug(player.getName() + " could not build "
+//                            + " because of the place = false");
+                    return false;
+                }
+            } else if (Settings.Done.RESTRICT_BUILDING && DoneFlag.isDone(plot)) {
+                if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_OTHER)) {
+                    pp.sendMessage(
+                            TranslatableCaption.of("done.building_restricted")
+                    );
+                    return false;
+                }
+            }
+        } else if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_ROAD)) {
+            pp.sendMessage(
+                    TranslatableCaption.of("permission.no_permission_event"),
+                    Template.of("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_ROAD))
+            );
+            return false;
+        }
+        return true;
     }
 
 
