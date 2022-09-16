@@ -84,7 +84,7 @@ public class P2CommandListener {
             return;
         }
         else{
-            ReviewAPI.getReviewPlot(plot).deleteReviewPlotData();
+            ReviewAPI.getReviewPlot(plot).deleteReview();
             plotDeleteEvent.setEventResult(Result.ACCEPT);
         }
     }
