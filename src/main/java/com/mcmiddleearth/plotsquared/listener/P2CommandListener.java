@@ -22,19 +22,27 @@ public class P2CommandListener {
 
     @Subscribe
     public void onPlotDone(PlotDoneEvent plotDoneEvent) {
-        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(Bukkit.getPlayer(plotDoneEvent.getPlot().getOwner()));
         plotDoneEvent.setEventResult(Result.DENY);
     }
 
     @Subscribe
     public void onPlayerPlotClaim(PlayerClaimPlotEvent playerClaimPlotEvent) {
-        PlotPlayer plotPlayer = playerClaimPlotEvent.getPlotPlayer();
+        PlotPlayer<?> plotPlayer = playerClaimPlotEvent.getPlotPlayer();
         Player player = Bukkit.getPlayer(plotPlayer.getUUID());
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if(plotPlayer.getAllowedPlots() > plotPlayer.getPlotCount()) {
+        int amountBeingReviewed = 0;
+        for(Plot plot : plotPlayer.getPlots()){
+            if(ReviewStatusFlag.isBeingReviewed(plot)) {
+                amountBeingReviewed =+ 1;
+            }
+        }
+        if(plotPlayer.getAllowedPlots() > plotPlayer.getPlotCount() + amountBeingReviewed) {
             for (Plot plot : playerClaimPlotEvent.getPlotPlayer().getPlots()) {
                 if (ReviewStatusFlag.isBeingReviewed(plot)) {
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_being_reviewed_edit"));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("permission.cant_claim_more_plots"),
+                            ReviewPlayer.templateOf("amount", String.valueOf(plotPlayer.getAllowedPlots())));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.info.submit_to_get_more"));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.info.submit_to_get_more_2"));
                     playerClaimPlotEvent.setEventResult(Result.DENY);
                     return;
                 }
@@ -46,13 +54,14 @@ public class P2CommandListener {
     public void OnPlotClear(PlotClearEvent plotClearEvent){
         Plot plot = plotClearEvent.getPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(Bukkit.getPlayer(plotClearEvent.getPlot().getOwner()));
-        plotClearEvent.setEventResult(Result.DENY);
         if (ReviewStatusFlag.isAccepted(plot)){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_accepted_edit"));
+            plotClearEvent.setEventResult(Result.DENY);
             return;
         }
         if(ReviewStatusFlag.isBeingReviewed(plot)){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_being_reviewed_edit"));
+            plotClearEvent.setEventResult(Result.DENY);
             return;
         }
         else{
@@ -64,13 +73,14 @@ public class P2CommandListener {
     public void onPlotDelete(PlotDeleteEvent plotDeleteEvent){
         Plot plot = plotDeleteEvent.getPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(Bukkit.getPlayer(plotDeleteEvent.getPlot().getOwner()));
-        plotDeleteEvent.setEventResult(Result.DENY);
         if (ReviewStatusFlag.isAccepted(plot)){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_accepted_edit"));
+            plotDeleteEvent.setEventResult(Result.DENY);
             return;
         }
         if(ReviewStatusFlag.isBeingReviewed(plot)){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_being_reviewed_edit"));
+            plotDeleteEvent.setEventResult(Result.DENY);
             return;
         }
         else{
