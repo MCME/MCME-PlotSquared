@@ -6,6 +6,9 @@ import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
 import com.mcmiddleearth.plotsquared.util.FileManagement;
+import com.plotsquared.bukkit.util.BukkitUtil;
+import com.plotsquared.core.configuration.caption.TranslatableCaption;
+import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotId;
 import com.plotsquared.core.plot.flag.PlotFlag;
@@ -17,6 +20,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.templateOf;
 import static org.bukkit.Bukkit.getLogger;
 
 public class ReviewPlot implements Serializable {
@@ -99,7 +103,21 @@ public class ReviewPlot implements Serializable {
                 this.saveReviewPlotData();
                 //set reviewFlag to false (end review process)
                 if(Bukkit.getPlayer(this.getPlot().getOwner()).isOnline()) {
+                    PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
                     this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
+                    String score = String.valueOf(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().get(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().size() - 1));
+                    ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(Bukkit.getPlayer(this.getPlot().getOwner()));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.header"));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_rejected"), templateOf("rating", score));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_rejected_2"));
+                    int allowedPlots = plotPlayer.getAllowedPlots();
+                    if (allowedPlots == 0)
+                        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.no_plot"));
+                    if (allowedPlots == 1)
+                        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plot"), templateOf("amount", String.valueOf(allowedPlots)));
+                    else
+                        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
                 }
                 else this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
                 plot.removeFlag(DoneFlag.class);
@@ -125,7 +143,21 @@ public class ReviewPlot implements Serializable {
                 PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
                 plot.setFlag(doneFlag);
                 //set plot to ACCEPTED
-                plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
+                if(Bukkit.getPlayer(this.getPlot().getOwner()).isOnline()){
+                    PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
+                    this.getPlot().setFlag(ReviewStatusFlag.LOCKED_FLAG);
+                    String score = String.valueOf(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().get(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().size() - 1));
+                    ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(Bukkit.getPlayer(this.getPlot().getOwner()));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.header"));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.plot_accepted"), templateOf("rating", score));
+                    int allowedPlots = plotPlayer.getAllowedPlots();
+                    if (allowedPlots == 1)
+                        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plot"), templateOf("amount", String.valueOf(allowedPlots)));
+                    else
+                        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
+                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
+                }
+                else plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
                 this.plotTempRatings.clear();
             }
         }
