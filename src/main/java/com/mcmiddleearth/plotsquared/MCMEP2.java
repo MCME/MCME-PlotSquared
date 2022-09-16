@@ -94,7 +94,7 @@ public final class MCMEP2 extends JavaPlugin {
      * @param location location where player tries to build
      * @return Whether the player has permission to build there
      */
-    public boolean hasBuildPermission(Player player, org.bukkit.Location location) {
+    public static boolean hasBuildPermission(Player player, org.bukkit.Location location) {
         com.plotsquared.core.location.Location plotSquaredLocation = BukkitUtil.adapt(location);
         PlotArea area = plotSquaredLocation.getPlotArea();
         if (area == null) {
