@@ -391,8 +391,8 @@ public class ReviewCommands {
                 }
                 long durationInMillis = (timeSinceLastReview - System.currentTimeMillis() + THREEDAYSINMILISEC );
                 String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
-                String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours, ";
-                String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " and days";
+                String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours and ";
+                String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " days";
                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
                 return;
             }

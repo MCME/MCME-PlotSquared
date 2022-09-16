@@ -5,21 +5,21 @@ import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
+import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import com.mcmiddleearth.plotsquared.review.ReviewPlot;
 import com.mcmiddleearth.plotsquared.util.FileManagement;
-import com.plotsquared.bukkit.player.BukkitPlayer;
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.PlotAPI;
 import com.plotsquared.core.configuration.Settings;
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.permissions.Permission;
+import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotArea;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import com.plotsquared.core.util.Permissions;
 import me.gleeming.command.CommandHandler;
-import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
@@ -27,6 +27,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.Objects;
+
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.templateOf;
 
 public final class MCMEP2 extends JavaPlugin {
 
@@ -46,16 +48,14 @@ public final class MCMEP2 extends JavaPlugin {
             getLogger().info("No PlotSquared detected!");
         }
 
-
         PluginManager pm = this.getServer().getPluginManager();
         pm.registerEvents(new com.mcmiddleearth.plotsquared.listener.PlayerListener(), this);
 
         plotAPI = new PlotAPI();
+        new ReviewAPI();
         GlobalFlagContainer.getInstance().addFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
         GlobalFlagContainer.getInstance().addFlag(ReviewRatingDataFlag.REVIEW_RATING_DATA_FLAG_NONE);
         GlobalFlagContainer.getInstance().addFlag(ReviewTimeDataFlag.REVIEW_TIME_DATA_FLAG_NONE);
-
-        new ReviewAPI();
 
         //data loading and making directories
         pluginDirectory = getDataFolder();
@@ -100,45 +100,41 @@ public final class MCMEP2 extends JavaPlugin {
         if (area == null) {
             return false;
         }
-        if (player.hasPermission("mcmep2.build.everywhere")) {
-            return true;
-        }
         Plot plot = area.getPlot(plotSquaredLocation);
-        BukkitPlayer pp = BukkitUtil.adapt(player);
+        PlotPlayer pp = BukkitUtil.adapt(player);
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         if (plot != null){
-            if (area.notifyIfOutsideBuildArea(pp, plotSquaredLocation.getY())) {
+            if (area.notifyIfOutsideBuildArea(pp, ((int) location.getY()))) {
                 return false;
             }
             if (!plot.hasOwner()) {
                 if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_UNOWNED)) {
-                    pp.sendMessage(
+                    reviewPlayer.sendMessage(
                             TranslatableCaption.of("permission.no_permission_event"),
-                            Template.of("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_UNOWNED))
+                            templateOf("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_UNOWNED))
                     );
                     return false;
                 }
             } else if (!plot.isAdded(pp.getUUID())) {
                 if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_OTHER)) {
-                    pp.sendMessage(
+                    reviewPlayer.sendMessage(
                             TranslatableCaption.of("permission.no_permission_event"),
-                            Template.of("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_OTHER))
+                            templateOf("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_OTHER))
                     );
-//                    plot.debug(player.getName() + " could not build "
-//                            + " because of the place = false");
                     return false;
                 }
             } else if (Settings.Done.RESTRICT_BUILDING && DoneFlag.isDone(plot)) {
                 if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_OTHER)) {
-                    pp.sendMessage(
+                    reviewPlayer.sendMessage(
                             TranslatableCaption.of("done.building_restricted")
                     );
                     return false;
                 }
             }
         } else if (!Permissions.hasPermission(pp, Permission.PERMISSION_ADMIN_BUILD_ROAD)) {
-            pp.sendMessage(
+            reviewPlayer.sendMessage(
                     TranslatableCaption.of("permission.no_permission_event"),
-                    Template.of("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_ROAD))
+                    templateOf("node", String.valueOf(Permission.PERMISSION_ADMIN_BUILD_ROAD))
             );
             return false;
         }
