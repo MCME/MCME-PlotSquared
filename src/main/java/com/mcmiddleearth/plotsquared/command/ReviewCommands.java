@@ -357,50 +357,35 @@ public class ReviewCommands {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_not_enough_complexity"));
             return;
         }
-        final long THREEDAYSINMILISEC = 86400000 * 3;//made one minute for debug reasons 86400000 * 3
-        if(plotPlayer.getPlotCount() == 1){
-            long timestamp = currentPlot.getTimestamp();
-            if (System.currentTimeMillis() + THREEDAYSINMILISEC - timestamp <= 0) {
-                ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
-                currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-                currentReviewPlot.submitReviewPlot(currentPlot);
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
-                return;
-            }
-            long durationInMillis = (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC );
-            String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
-            String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours, ";
-            String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " and days";
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
-            return;
-        }
+        final long THREEDAYSINMILISEC = 86400000 * 3;//DAYINMILISEC * 3
+        long timestamp = currentPlot.getTimestamp();
         for (Plot plot : plotPlayer.getPlots()) {
-            if(ReviewStatusFlag.isBeingReviewed(plot)) {
+            if(plot == currentPlot) continue;
+            if (ReviewStatusFlag.isBeingReviewed(plot) || (ReviewPlot.loadReviewPlotData(plot) != null)) {
                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_being_reviewed_other"));
                 return;
             }
             if (!(plot.getFlag(ReviewTimeDataFlag.class).isEmpty())) {
-                ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
                 ReviewPlot acceptedPlot = ReviewAPI.getReviewPlot(plot);
-                long timeSinceLastReview = acceptedPlot.getTimeSinceLastReview();
-                if (System.currentTimeMillis() + THREEDAYSINMILISEC - timeSinceLastReview <= 0) {
-                    currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-                    currentReviewPlot.submitReviewPlot(currentPlot);
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
-                    return;
-                }
-                long durationInMillis = (timeSinceLastReview - System.currentTimeMillis() + THREEDAYSINMILISEC );
-                String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
-                String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours and ";
-                String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " days";
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
-                return;
+                timestamp = acceptedPlot.getTimeSinceLastReview();
             }
         }
-        currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(currentPlot);
-        reviewPlot.submitReviewPlot(currentPlot);
-        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+        if (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC <= 0) {
+            ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
+            currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
+            currentReviewPlot.submitReviewPlot(currentPlot);
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+            return;
+        }
+        long durationInMillis = (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC);
+        String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
+        String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours and ";
+        String days = String.valueOf((durationInMillis / (1000 * 60 * 60 * 24))) + " days";
+        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
+//        currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
+//        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(currentPlot);
+//        reviewPlot.submitReviewPlot(currentPlot);
+//        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
     }
 
     /**
@@ -701,6 +686,35 @@ public class ReviewCommands {
         }
     }
 
+    @Command(names = {"review force"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceReview(Player player) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+        if (plot == null) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+            return;
+        }
+        if (!commandConfirm.containsKey(player)) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_force"));
+            commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewForce));
+            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), () -> commandConfirm.remove(player), 20 * 10);
+            return;
+        }
+        if (commandConfirm.get(player).storedCommand == reviewForce) {
+            plot = commandConfirm.get(player).storedPlot;
+            commandConfirm.remove(player);
+
+            ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+            if (reviewPlot.isBeingReviewed()) {
+                player.sendMessage("This is currently being reviewed, try again later");
+                return;
+            }
+            reviewPlot.submitReviewPlot(plot);
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+        }
+    }
+
     @Command(names = {"review confirm"}, permission = "mcmep2.review.mod", playerOnly = true)
     public void confirmReview(Player player) {
         if(commandConfirm.containsKey(player)){
@@ -717,6 +731,10 @@ public class ReviewCommands {
             } else if (storedCommand == reviewRestart) {
                 commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewConfirm));
                 restartReview(player);
+                return;
+            } else if (storedCommand == reviewForce){
+                commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewForce));
+                forceReview(player);
                 return;
             }
         }

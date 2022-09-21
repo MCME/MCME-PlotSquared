@@ -20,7 +20,8 @@ public class ReviewAPI {
         reviewClear,
         reviewDelete,
         reviewRestart,
-        reviewConfirm
+        reviewConfirm,
+        reviewForce
     }
 
 
