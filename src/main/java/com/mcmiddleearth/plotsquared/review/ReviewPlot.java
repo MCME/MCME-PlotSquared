@@ -177,6 +177,7 @@ public class ReviewPlot implements Serializable {
         long flagValue = System.currentTimeMillis() / 1000;
         PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
         plot.setFlag(doneFlag);
+        plot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
     }
 
     /**
