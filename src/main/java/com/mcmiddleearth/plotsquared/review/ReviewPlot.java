@@ -172,7 +172,7 @@ public class ReviewPlot implements Serializable {
 
     public void submitReviewPlot(Plot plot) {
         File file = new File(MCMEP2.getReviewPlotDirectory() , plot.getId().toString() + ".yml");
-        FileManagement.writeObjectToFile(this, file);
+        if(!file.exists()) FileManagement.writeObjectToFile(this, file);
         ReviewAPI.addReviewPlot(this.getPlotId(), this);
         long flagValue = System.currentTimeMillis() / 1000;
         PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
