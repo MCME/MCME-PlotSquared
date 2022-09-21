@@ -54,13 +54,13 @@ public class ReviewCommands {
             return;
         }
         for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()) {
-            if (reviewPlayer.hasAlreadyReviewed(reviewPlot)) {
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
+            if (!reviewPlayer.hasAlreadyReviewed(reviewPlot)) {
+                ReviewParty.startReviewParty(player);
+                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
                 return;
             }
         }
-        ReviewParty.startReviewParty(player);
-        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
+        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
     }
 
     /**
