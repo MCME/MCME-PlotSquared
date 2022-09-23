@@ -487,7 +487,7 @@ public class ReviewCommands {
             lastString = s;
         }
         //logic for deciding whether to show back/next arrow
-        if(0 < page && page < numberOfPages-1){
+        if(0 < page && page < numberOfPages){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_both"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", " ◀"), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", "▶ "));
             return;
         }
@@ -495,7 +495,7 @@ public class ReviewCommands {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_next"), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", "▶ "));
             return;
         }
-        if(0 < page && page == numberOfPages - 1){
+        if(0 < page && page == numberOfPages){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_back"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", " ◀"));
             return;
         }
