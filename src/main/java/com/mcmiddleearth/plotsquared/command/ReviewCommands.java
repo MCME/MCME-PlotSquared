@@ -465,7 +465,8 @@ public class ReviewCommands {
         ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_header"));
         int FEEDBACKPERPAGE = 5;
-        int numberOfPages = Math.floorDiv(reviewPlot.getPlotFinalFeedback().size(), FEEDBACKPERPAGE);
+        // if amount of feedback is 5 then we get 5-1 / 5 rounded down which is 4, for 6 we get 1, can not be 0 according to method call
+        int numberOfPages = Math.floorDiv(reviewPlot.getPlotFinalFeedback().size() - 1, FEEDBACKPERPAGE);
         getLogger().info(String.valueOf(numberOfPages));
         int lastpage = Math.floorMod(reviewPlot.getPlotFinalFeedback().size(), FEEDBACKPERPAGE);
         getLogger().info(String.valueOf(lastpage));
