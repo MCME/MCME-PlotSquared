@@ -274,6 +274,7 @@ public class ReviewCommands {
         reviewPlayer.setPlotRating(rating);
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.rating"));
         if (reviewPlayer.getReviewParty().hasGivenRating() && reviewPlayer.getReviewParty().hasGivenFeedback() || reviewPlayer.hasAlreadyReviewed(reviewPlayer.getReviewParty().getCurrentReviewPlot())) {
+            //if not last plot
             if(reviewPlayer.getReviewParty().getNextReviewPlot() != null) {
                 reviewPlayer.getReviewParty().goNextPlot();
                 for (ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
@@ -281,6 +282,7 @@ public class ReviewCommands {
                 }
                 return;
             }
+            //if last plot
             else{
                 for (ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
                     i.sendMessage(TranslatableCaption.of("mcme.review.finished"));
@@ -682,6 +684,7 @@ public class ReviewCommands {
                 player.sendMessage("This is currently being reviewed, try again later");
                 return;
             }
+            plot.removeFlag(DoneFlag.class);
             reviewPlot.deleteReview();
         }
     }
