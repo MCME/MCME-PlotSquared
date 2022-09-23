@@ -166,4 +166,9 @@ public class ReviewParty {
     public UUID getId() {
         return getReviewerLeader().getUniqueId();
     }
+
+    //debug party needed for being able to /review force end
+    public ReviewParty() {
+        this.LEADER = null;
+    }
 }

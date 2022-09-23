@@ -363,7 +363,8 @@ public class ReviewCommands {
         long timestamp = currentPlot.getTimestamp();
         for (Plot plot : plotPlayer.getPlots()) {
             if(plot == currentPlot) continue;
-            if (ReviewStatusFlag.isBeingReviewed(plot) || (ReviewPlot.loadReviewPlotData(plot) != null)) {
+            //if ReviewAPI contains the plot it is being reviewed, or has been reviewed but not accepted
+            if (ReviewAPI.getReviewPlot(plot)!= null) {
                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_being_reviewed_other"));
                 return;
             }
@@ -684,12 +685,11 @@ public class ReviewCommands {
                 player.sendMessage("This is currently being reviewed, try again later");
                 return;
             }
-            plot.removeFlag(DoneFlag.class);
             reviewPlot.deleteReview();
         }
     }
 
-    @Command(names = {"review force"}, permission = "mcmep2.review.admin", playerOnly = true)
+    @Command(names = {"review force submit"}, permission = "mcmep2.review.admin", playerOnly = true)
     public void forceReview(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot plot = plotPlayer.getCurrentPlot();
@@ -716,6 +716,23 @@ public class ReviewCommands {
             reviewPlot.submitReviewPlot(plot);
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
         }
+    }
+
+    @Command(names = {"review force rate"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceRating(Player player, @Param(name = "number") int rating) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+        reviewPlot.getPlotTempRatings().add(rating);
+    }
+
+    @Command(names = {"review force end"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceEnd(Player player) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+        ReviewParty reviewParty = new ReviewParty();
+        reviewPlot.endPlotReview(reviewParty);
     }
 
     @Command(names = {"review confirm"}, permission = "mcmep2.review.mod", playerOnly = true)
