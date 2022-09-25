@@ -41,7 +41,7 @@ public class PlayerListener implements Listener {
                                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
                             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
                         }
-                    }, 20 * 1);
+                    }, 20 * 3);
                 }
                 case REJECTED -> {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
@@ -62,7 +62,7 @@ public class PlayerListener implements Listener {
                                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
                             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
                         }
-                    }, 20 * 1);
+                    }, 20 * 3);
                 }
             }
         }

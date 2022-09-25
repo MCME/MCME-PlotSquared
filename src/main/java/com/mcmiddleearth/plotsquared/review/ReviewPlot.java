@@ -101,7 +101,7 @@ public class ReviewPlot implements Serializable {
                 this.plotTempRatings.clear();
                 this.saveReviewPlotData();
                 //set reviewFlag to false (end review process)
-                if(Bukkit.getPlayer(this.getPlot().getOwner()).isOnline()) {
+                if(Bukkit.getOfflinePlayer(this.getPlot().getOwner()).isOnline()) {
                     PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
                     this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
                     String score = String.valueOf(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().get(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().size() - 1));
@@ -140,7 +140,7 @@ public class ReviewPlot implements Serializable {
                 PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
                 plot.setFlag(doneFlag);
                 //set plot to ACCEPTED
-                if(Bukkit.getPlayer(this.getPlot().getOwner()).isOnline()){
+                if(Bukkit.getOfflinePlayer(this.getPlot().getOwner()).isOnline()){
                     PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
                     this.getPlot().setFlag(ReviewStatusFlag.LOCKED_FLAG);
                     String score = String.valueOf(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().get(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().size() - 1));

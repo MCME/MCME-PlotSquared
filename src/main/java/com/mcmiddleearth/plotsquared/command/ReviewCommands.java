@@ -762,4 +762,3 @@ public class ReviewCommands {
         player.sendMessage("nothing to confirm");
     }
 }
-
