@@ -3,7 +3,6 @@ package com.mcmiddleearth.plotsquared.command;
 import com.mcmiddleearth.plotsquared.MCMEP2;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
@@ -360,7 +359,9 @@ public class ReviewCommands {
             return;
         }
         final long THREEDAYSINMILISEC = 86400000 * 3;//DAYINMILISEC * 3
+        ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
         long timestamp = currentPlot.getTimestamp();
+        if(currentReviewPlot.getTimeOfLastReview() > timestamp) timestamp = currentReviewPlot.getTimeOfLastReview();
         for (Plot plot : plotPlayer.getPlots()) {
             if(plot == currentPlot) continue;
             //if ReviewAPI contains the plot it is being reviewed, or has been reviewed but not accepted
@@ -368,13 +369,13 @@ public class ReviewCommands {
                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_being_reviewed_other"));
                 return;
             }
-            if (!(plot.getFlag(ReviewTimeDataFlag.class).isEmpty())) {
+            //if the player has an accepted plot, check if it's been accepted more recently than the current timestamp
+            if (ReviewStatusFlag.isAccepted(plot)) {
                 ReviewPlot acceptedPlot = ReviewAPI.getReviewPlot(plot);
-                timestamp = acceptedPlot.getTimeSinceLastReview();
+                if(acceptedPlot.getTimeOfLastReview() < timestamp) timestamp = acceptedPlot.getTimeOfLastReview();
             }
         }
         if (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC <= 0) {
-            ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
             currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
             currentReviewPlot.submitReviewPlot(currentPlot);
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));

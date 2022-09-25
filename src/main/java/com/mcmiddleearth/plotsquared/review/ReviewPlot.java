@@ -262,7 +262,7 @@ public class ReviewPlot implements Serializable {
         return MCMEP2.getPlotAPI().getPlotSquared().getPlotAreaManager().getPlotArea(MCMEP2.getPlotWorld(), stringPlotId).getPlot(getPlotId());
     }
 
-    public long getTimeSinceLastReview(){
+    public long getTimeOfLastReview(){
         if (this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.ACCEPTED || this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.LOCKED){
             return this.getPlot().getFlag(ReviewTimeDataFlag.class).get(this.getPlot().getFlag(ReviewTimeDataFlag.class).size()-1);
         }
