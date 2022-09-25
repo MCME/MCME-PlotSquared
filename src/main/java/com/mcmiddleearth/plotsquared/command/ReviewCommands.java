@@ -386,10 +386,6 @@ public class ReviewCommands {
         String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours and ";
         String days = String.valueOf((durationInMillis / (1000 * 60 * 60 * 24))) + " days";
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
-//        currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-//        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(currentPlot);
-//        reviewPlot.submitReviewPlot(currentPlot);
-//        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
     }
 
     /**

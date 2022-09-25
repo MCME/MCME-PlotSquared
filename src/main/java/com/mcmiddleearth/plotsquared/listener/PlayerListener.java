@@ -29,6 +29,7 @@ public class PlayerListener implements Listener {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
                         @Override
                         public void run() {
+                            if(!playerJoinEvent.getPlayer().isOnline()) return;
                             i.setFlag(ReviewStatusFlag.LOCKED_FLAG);
                             String rating = String.valueOf(ReviewAPI.getReviewPlot(i).getFinalRatings().get(ReviewAPI.getReviewPlot(i).getFinalRatings().size() - 1));
                             ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(playerJoinEvent.getPlayer());
@@ -47,6 +48,7 @@ public class PlayerListener implements Listener {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), new Runnable() {
                         @Override
                         public void run() {
+                            if(!playerJoinEvent.getPlayer().isOnline()) return;
                             i.setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
                             String rating = String.valueOf(ReviewAPI.getReviewPlot(i).getFinalRatings().get(ReviewAPI.getReviewPlot(i).getFinalRatings().size() - 1));
                             ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(playerJoinEvent.getPlayer());
