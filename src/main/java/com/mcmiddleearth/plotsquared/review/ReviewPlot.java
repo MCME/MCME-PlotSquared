@@ -100,7 +100,7 @@ public class ReviewPlot implements Serializable {
                 //save file with
                 this.plotTempRatings.clear();
                 this.saveReviewPlotData();
-                //set reviewFlag to false (end review process)
+                //send message to online player about it getting rejected
                 if(Bukkit.getOfflinePlayer(this.getPlot().getOwner()).isOnline()) {
                     PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
                     this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
@@ -118,6 +118,7 @@ public class ReviewPlot implements Serializable {
                         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
                 }
+                //set reviewFlag to false (end review process)
                 else this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
                 plot.removeFlag(DoneFlag.class);
             }
@@ -139,7 +140,7 @@ public class ReviewPlot implements Serializable {
                 long flagValue = System.currentTimeMillis() / 1000;
                 PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
                 plot.setFlag(doneFlag);
-                //set plot to ACCEPTED
+                //send message to online player about it getting accepted
                 if(Bukkit.getOfflinePlayer(this.getPlot().getOwner()).isOnline()){
                     PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
                     this.getPlot().setFlag(ReviewStatusFlag.LOCKED_FLAG);
@@ -154,6 +155,7 @@ public class ReviewPlot implements Serializable {
                         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
                 }
+                //set plot to ACCEPTED
                 else plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
                 this.plotTempRatings.clear();
             }

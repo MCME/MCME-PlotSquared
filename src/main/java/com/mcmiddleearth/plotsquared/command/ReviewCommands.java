@@ -733,6 +733,14 @@ public class ReviewCommands {
         reviewPlot.endPlotReview(reviewParty);
     }
 
+    @Command(names = {"review force done"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceDone(Player player, @Param(name = "seconds since epoch") int rating) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Integer.toString(rating));
+        plot.setFlag(doneFlag);
+    }
+
     @Command(names = {"review confirm"}, permission = "mcmep2.review.mod", playerOnly = true)
     public void confirmReview(Player player) {
         if(commandConfirm.containsKey(player)){
