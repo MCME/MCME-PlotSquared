@@ -74,7 +74,7 @@ public class ReviewParty {
         else {
             ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
             for (ReviewPlayer i : this.getAllReviewers()) {
-                i.teleportToReviewPlot(currentReviewPlot);
+                i.teleportToReviewPlot(nextPlot);
             }
         }
     }
@@ -119,7 +119,7 @@ public class ReviewParty {
     }
 
     public ReviewPlot getNextReviewPlot(){
-        if(reviewPlotLinkedList.size() == 1) return null;
+        if(reviewPlotLinkedList.size() == 0) return null;
         return this.reviewPlotLinkedList.get(1);
     }
 
@@ -165,5 +165,10 @@ public class ReviewParty {
 
     public UUID getId() {
         return getReviewerLeader().getUniqueId();
+    }
+
+    //debug party needed for being able to /review force end
+    public ReviewParty() {
+        this.LEADER = null;
     }
 }

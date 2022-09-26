@@ -3,7 +3,6 @@ package com.mcmiddleearth.plotsquared.command;
 import com.mcmiddleearth.plotsquared.MCMEP2;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
 import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
 import com.mcmiddleearth.plotsquared.review.ReviewAPI;
 import com.mcmiddleearth.plotsquared.review.ReviewParty;
 import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
@@ -54,13 +53,13 @@ public class ReviewCommands {
             return;
         }
         for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()) {
-            if (reviewPlayer.hasAlreadyReviewed(reviewPlot)) {
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
+            if (!reviewPlayer.hasAlreadyReviewed(reviewPlot)) {
+                ReviewParty.startReviewParty(player);
+                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
                 return;
             }
         }
-        ReviewParty.startReviewParty(player);
-        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
+        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
     }
 
     /**
@@ -274,6 +273,7 @@ public class ReviewCommands {
         reviewPlayer.setPlotRating(rating);
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.rating"));
         if (reviewPlayer.getReviewParty().hasGivenRating() && reviewPlayer.getReviewParty().hasGivenFeedback() || reviewPlayer.hasAlreadyReviewed(reviewPlayer.getReviewParty().getCurrentReviewPlot())) {
+            //if not last plot
             if(reviewPlayer.getReviewParty().getNextReviewPlot() != null) {
                 reviewPlayer.getReviewParty().goNextPlot();
                 for (ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
@@ -281,6 +281,7 @@ public class ReviewCommands {
                 }
                 return;
             }
+            //if last plot
             else{
                 for (ReviewPlayer i : reviewPlayer.getReviewParty().getAllReviewers()) {
                     i.sendMessage(TranslatableCaption.of("mcme.review.finished"));
@@ -357,50 +358,34 @@ public class ReviewCommands {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_not_enough_complexity"));
             return;
         }
-        final long THREEDAYSINMILISEC = 86400000 * 3;//made one minute for debug reasons 86400000 * 3
-        if(plotPlayer.getPlotCount() == 1){
-            long timestamp = currentPlot.getTimestamp();
-            if (System.currentTimeMillis() + THREEDAYSINMILISEC - timestamp <= 0) {
-                ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
-                currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-                currentReviewPlot.submitReviewPlot(currentPlot);
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
-                return;
-            }
-            long durationInMillis = (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC );
-            String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
-            String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours, ";
-            String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " and days";
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
-            return;
-        }
+        final long THREEDAYSINMILISEC = 86400000 * 3;//DAYINMILISEC * 3
+        ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
+        long timestamp = currentPlot.getTimestamp();
+        if(currentReviewPlot.getTimeOfLastReview() > timestamp) timestamp = currentReviewPlot.getTimeOfLastReview();
         for (Plot plot : plotPlayer.getPlots()) {
-            if(ReviewStatusFlag.isBeingReviewed(plot)) {
+            if(plot == currentPlot) continue;
+            //if ReviewAPI contains the plot it is being reviewed, or has been reviewed but not accepted
+            if (ReviewAPI.getReviewPlot(plot)!= null) {
                 reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_being_reviewed_other"));
                 return;
             }
-            if (!(plot.getFlag(ReviewTimeDataFlag.class).isEmpty())) {
-                ReviewPlot currentReviewPlot = ReviewAPI.getReviewPlot(currentPlot);
+            //if the player has an accepted plot, check if it's been accepted more recently than the current timestamp
+            if (ReviewStatusFlag.isAccepted(plot)) {
                 ReviewPlot acceptedPlot = ReviewAPI.getReviewPlot(plot);
-                long timeSinceLastReview = acceptedPlot.getTimeSinceLastReview();
-                if (System.currentTimeMillis() + THREEDAYSINMILISEC - timeSinceLastReview <= 0) {
-                    currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-                    currentReviewPlot.submitReviewPlot(currentPlot);
-                    reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
-                    return;
-                }
-                long durationInMillis = (timeSinceLastReview - System.currentTimeMillis() + THREEDAYSINMILISEC );
-                String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
-                String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours and ";
-                String days = String.valueOf((durationInMillis / (1000 * 60 * 60 *24))) + " days";
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
-                return;
+                if(acceptedPlot.getTimeOfLastReview() < timestamp) timestamp = acceptedPlot.getTimeOfLastReview();
             }
         }
-        currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
-        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(currentPlot);
-        reviewPlot.submitReviewPlot(currentPlot);
-        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+        if (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC <= 0) {
+            currentPlot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
+            currentReviewPlot.submitReviewPlot(currentPlot);
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+            return;
+        }
+        long durationInMillis = (timestamp - System.currentTimeMillis() + THREEDAYSINMILISEC);
+        String minutes = String.valueOf((durationInMillis / (1000 * 60)) % 60) + " minutes, ";
+        String hours = String.valueOf((durationInMillis / (1000 * 60 * 60)) % 24) + " hours and ";
+        String days = String.valueOf((durationInMillis / (1000 * 60 * 60 * 24))) + " days";
+        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.submit_too_early"), templateOf("time", minutes + hours + days));
     }
 
     /**
@@ -477,7 +462,8 @@ public class ReviewCommands {
         ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_header"));
         int FEEDBACKPERPAGE = 5;
-        int numberOfPages = Math.floorDiv(reviewPlot.getPlotFinalFeedback().size(), FEEDBACKPERPAGE);
+        // if amount of feedback is 5 then we get 5-1 / 5 rounded down which is 4, for 6 we get 1, can not be 0 according to method call
+        int numberOfPages = Math.floorDiv(reviewPlot.getPlotFinalFeedback().size() - 1, FEEDBACKPERPAGE);
         getLogger().info(String.valueOf(numberOfPages));
         int lastpage = Math.floorMod(reviewPlot.getPlotFinalFeedback().size(), FEEDBACKPERPAGE);
         getLogger().info(String.valueOf(lastpage));
@@ -498,7 +484,7 @@ public class ReviewCommands {
             lastString = s;
         }
         //logic for deciding whether to show back/next arrow
-        if(0 < page && page < numberOfPages-1){
+        if(0 < page && page < numberOfPages){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_both"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", " ◀"), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", "▶ "));
             return;
         }
@@ -506,7 +492,7 @@ public class ReviewCommands {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_next"), templateOf("next_command", "/review status feedback " + (page + 1)),templateOf("arrow_next", "▶ "));
             return;
         }
-        if(0 < page && page == numberOfPages - 1){
+        if(0 < page && page == numberOfPages){
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.feedback_page_back"), templateOf("back_command", "/review status feedback " + (page - 1)),templateOf("arrow_back", " ◀"));
             return;
         }
@@ -701,6 +687,60 @@ public class ReviewCommands {
         }
     }
 
+    @Command(names = {"review force submit"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceReview(Player player) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+        if (plot == null) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_plot"));
+            return;
+        }
+        if (!commandConfirm.containsKey(player)) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.confirm_force"));
+            commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewForce));
+            Bukkit.getScheduler().scheduleSyncDelayedTask(MCMEP2.getInstance(), () -> commandConfirm.remove(player), 20 * 10);
+            return;
+        }
+        if (commandConfirm.get(player).storedCommand == reviewForce) {
+            plot = commandConfirm.get(player).storedPlot;
+            commandConfirm.remove(player);
+
+            ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+            if (reviewPlot.isBeingReviewed()) {
+                player.sendMessage("This is currently being reviewed, try again later");
+                return;
+            }
+            reviewPlot.submitReviewPlot(plot);
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.submit"));
+        }
+    }
+
+    @Command(names = {"review force rate"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceRating(Player player, @Param(name = "number") int rating) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+        reviewPlot.getPlotTempRatings().add(rating);
+    }
+
+    @Command(names = {"review force end"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceEnd(Player player) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        ReviewPlot reviewPlot = ReviewAPI.getReviewPlot(plot);
+        ReviewParty reviewParty = new ReviewParty();
+        reviewPlot.endPlotReview(reviewParty);
+    }
+
+    @Command(names = {"review force done"}, permission = "mcmep2.review.admin", playerOnly = true)
+    public void forceDone(Player player, @Param(name = "seconds since epoch") int rating) {
+        PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
+        Plot plot = plotPlayer.getCurrentPlot();
+        PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Integer.toString(rating));
+        plot.setFlag(doneFlag);
+    }
+
     @Command(names = {"review confirm"}, permission = "mcmep2.review.mod", playerOnly = true)
     public void confirmReview(Player player) {
         if(commandConfirm.containsKey(player)){
@@ -718,9 +758,12 @@ public class ReviewCommands {
                 commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewConfirm));
                 restartReview(player);
                 return;
+            } else if (storedCommand == reviewForce){
+                commandConfirm.put(player, new ReviewAPI.storeData(plot, reviewForce));
+                forceReview(player);
+                return;
             }
         }
         player.sendMessage("nothing to confirm");
     }
 }
-

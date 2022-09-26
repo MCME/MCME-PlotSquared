@@ -20,7 +20,8 @@ public class ReviewAPI {
         reviewClear,
         reviewDelete,
         reviewRestart,
-        reviewConfirm
+        reviewConfirm,
+        reviewForce
     }
 
 
@@ -82,6 +83,10 @@ public class ReviewAPI {
             return reviewPlots.get(plot.getId());
         }
         else return new ReviewPlot(plot);
+    }
+
+    public static boolean isBeingReviewed(Plot plot){
+        return reviewPlots.containsKey(plot.getId());
     }
 
     public static Collection<ReviewPlot> getReviewPlotsCollection() {

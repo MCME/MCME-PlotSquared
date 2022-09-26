@@ -26,7 +26,7 @@ import static org.bukkit.Bukkit.getLogger;
 public class ReviewPlot implements Serializable {
     private final String stringPlotId;
     private HashMap<java.util.UUID, Integer> playerReviewIteration;
-    private HashSet<Integer> plotTempRatings;
+    private ArrayList<Integer> plotTempRatings;
     private ArrayList<String> plotFinalFeedback;
     private ArrayList<Long> plotFinalRatings;
     private ArrayList<Long> plotFinalReviewTimeStamps;
@@ -46,7 +46,7 @@ public class ReviewPlot implements Serializable {
         if (reviewPlot == null){
             this.stringPlotId = plot.getId().toString();
             this.playerReviewIteration = new HashMap<>();
-            this.plotTempRatings = new HashSet<>();
+            this.plotTempRatings = new ArrayList<>();
             this.plotFinalFeedback = new ArrayList<>();
             this.plotFinalRatings = new ArrayList<>();
             this.plotFinalReviewTimeStamps = new ArrayList<>();
@@ -72,6 +72,7 @@ public class ReviewPlot implements Serializable {
     }
 
     public void endPlotReview(ReviewParty reviewParty) {
+        // if there's actually things to review
         if(!reviewParty.getFeedbacks().isEmpty()) {
             addFeedback(reviewParty.getFeedbacks());
             addTempRatings(reviewParty.getPlotRatings());
@@ -90,19 +91,17 @@ public class ReviewPlot implements Serializable {
                 getLogger().info("Rejected");
                 ReviewAPI.removeReviewPlot(this);
                 int ratingSum = 0;
-                int count = 0;
                 for(int i : plotTempRatings){
                     ratingSum += i;
-                    count += 1;
                 }
-                long rating = Math.floorDiv(ratingSum, count);
+                long rating = Math.floorDiv(ratingSum, plotTempRatings.size());
                 plotFinalRatings.add(rating);
                 plotFinalReviewTimeStamps.add(System.currentTimeMillis());
                 //save file with
                 this.plotTempRatings.clear();
                 this.saveReviewPlotData();
-                //set reviewFlag to false (end review process)
-                if(Bukkit.getPlayer(this.getPlot().getOwner()).isOnline()) {
+                //send message to online player about it getting rejected
+                if(Bukkit.getOfflinePlayer(this.getPlot().getOwner()).isOnline()) {
                     PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
                     this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
                     String score = String.valueOf(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().get(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().size() - 1));
@@ -119,6 +118,7 @@ public class ReviewPlot implements Serializable {
                         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
                 }
+                //set reviewFlag to false (end review process)
                 else this.getPlot().setFlag(ReviewStatusFlag.REJECTED_FLAG);
                 plot.removeFlag(DoneFlag.class);
             }
@@ -126,12 +126,10 @@ public class ReviewPlot implements Serializable {
                 getLogger().info("Accepted");
                 ReviewAPI.removeReviewPlot(this);
                 int ratingSum = 0;
-                int count = 0;
                 for(int i : plotTempRatings){
                     ratingSum += i;
-                    count += 1;
                 }
-                long rating = Math.floorDiv(ratingSum, count);
+                long rating = Math.floorDiv(ratingSum, plotTempRatings.size());
                 plotFinalRatings.add(rating);
                 plotFinalReviewTimeStamps.add(System.currentTimeMillis());
                 //save data to flag and delete data from disk
@@ -142,8 +140,8 @@ public class ReviewPlot implements Serializable {
                 long flagValue = System.currentTimeMillis() / 1000;
                 PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
                 plot.setFlag(doneFlag);
-                //set plot to ACCEPTED
-                if(Bukkit.getPlayer(this.getPlot().getOwner()).isOnline()){
+                //send message to online player about it getting accepted
+                if(Bukkit.getOfflinePlayer(this.getPlot().getOwner()).isOnline()){
                     PlotPlayer plotPlayer = BukkitUtil.adapt(Bukkit.getPlayer(this.getPlot().getOwner()));
                     this.getPlot().setFlag(ReviewStatusFlag.LOCKED_FLAG);
                     String score = String.valueOf(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().get(ReviewAPI.getReviewPlot(this.getPlot()).getFinalRatings().size() - 1));
@@ -157,6 +155,7 @@ public class ReviewPlot implements Serializable {
                         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.new_plots"), templateOf("amount", String.valueOf(allowedPlots)));
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.status.footer"));
                 }
+                //set plot to ACCEPTED
                 else plot.setFlag(ReviewStatusFlag.ACCEPTED_FLAG);
                 this.plotTempRatings.clear();
             }
@@ -172,11 +171,12 @@ public class ReviewPlot implements Serializable {
 
     public void submitReviewPlot(Plot plot) {
         File file = new File(MCMEP2.getReviewPlotDirectory() , plot.getId().toString() + ".yml");
-        FileManagement.writeObjectToFile(this, file);
+        if(!file.exists()) FileManagement.writeObjectToFile(this, file);
         ReviewAPI.addReviewPlot(this.getPlotId(), this);
         long flagValue = System.currentTimeMillis() / 1000;
         PlotFlag<?, ?> doneFlag = plot.getFlagContainer().getFlag(DoneFlag.class).createFlagInstance(Long.toString(flagValue));
         plot.setFlag(doneFlag);
+        plot.setFlag(ReviewStatusFlag.BEING_REVIEWED_FLAG);
     }
 
     /**
@@ -184,13 +184,10 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     private boolean passedTimeThreshold() {
-        if(plotTempRatings.size()<1) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
-        final int DAYINGMILISEC = 86400000;//made one minute for debug reasons 86400000
-        if (plotFinalReviewTimeStamps.size() == 0){
-            return false;
-        }
-        else;
-            return plotFinalReviewTimeStamps.get(plotFinalReviewTimeStamps.size() - 1) <= ((System.currentTimeMillis() ) - DAYINGMILISEC);
+        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
+        final int DAYINGMILISEC = 86400000;// 86400000
+        long timeSinceSubmitting = Long.parseLong(this.getPlot().getFlag(DoneFlag.class))*1000;
+        return timeSinceSubmitting - System.currentTimeMillis() + DAYINGMILISEC <= 0;
     }
 
     /**
@@ -198,14 +195,12 @@ public class ReviewPlot implements Serializable {
      * @return true if passed
      */
     public boolean passedRatingThreshold(){
-        if(plotTempRatings.size()<1) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
+        if(plotTempRatings.size()<5) return false; // if less than 5 people reviewed the plot //REDUCED TO 3 for debug reasons
         int ratingSum = 0;
-        int count = 0;
         for(int i : plotTempRatings){
             ratingSum += i;
-            count += 1;
         }
-        int rating = Math.floorDiv(ratingSum, count);
+        int rating = Math.floorDiv(ratingSum, plotTempRatings.size());
         return rating >= 50;
     }
 
@@ -269,7 +264,7 @@ public class ReviewPlot implements Serializable {
         return MCMEP2.getPlotAPI().getPlotSquared().getPlotAreaManager().getPlotArea(MCMEP2.getPlotWorld(), stringPlotId).getPlot(getPlotId());
     }
 
-    public long getTimeSinceLastReview(){
+    public long getTimeOfLastReview(){
         if (this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.ACCEPTED || this.getPlot().getFlag(ReviewStatusFlag.class) == ReviewStatus.LOCKED){
             return this.getPlot().getFlag(ReviewTimeDataFlag.class).get(this.getPlot().getFlag(ReviewTimeDataFlag.class).size()-1);
         }
@@ -300,6 +295,7 @@ public class ReviewPlot implements Serializable {
         plotTempRatings.clear();
         this.deleteReviewPlotData();
         this.getPlot().removeFlag(ReviewRatingDataFlag.class);
+        this.getPlot().removeFlag(DoneFlag.class);
         this.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
     }
 
@@ -337,7 +333,7 @@ public class ReviewPlot implements Serializable {
         return playerReviewIteration;
     }
 
-    public HashSet<Integer> getPlotTempRatings() {
+    public ArrayList<Integer> getPlotTempRatings() {
         return plotTempRatings;
     }
 
