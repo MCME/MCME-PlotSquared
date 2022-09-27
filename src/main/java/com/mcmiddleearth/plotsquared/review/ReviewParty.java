@@ -119,7 +119,7 @@ public class ReviewParty {
     }
 
     public ReviewPlot getNextReviewPlot(){
-        if(reviewPlotLinkedList.size() == 0) return null;
+        if(reviewPlotLinkedList.size() == 0 || reviewPlotLinkedList.size() == 1) return null;
         return this.reviewPlotLinkedList.get(1);
     }
 
