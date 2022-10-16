@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 
-import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 import static org.bukkit.Bukkit.getLogger;
 
 public class ReviewPlot implements Serializable {
@@ -76,7 +76,7 @@ public class ReviewPlot implements Serializable {
         if(!reviewParty.getFeedbacks().isEmpty()) {
             addFeedback(reviewParty.getFeedbacks());
             addTempRatings(reviewParty.getPlotRatings());
-            setPlayerReviewAmounts(reviewParty.getAllReviewers());
+            setPlayerReviewAmounts(reviewParty.getReviewPlayers());
         }
         ReviewStatus reviewStatus = this.getReviewStatus();
         Plot plot = this.getPlot();
@@ -224,7 +224,7 @@ public class ReviewPlot implements Serializable {
      * Sets the amount of times a player has reviewed this plot
      * @param reviewPlayers list of reviewPlayers in reviewParty
      */
-    public void setPlayerReviewAmounts(HashSet<ReviewPlayer> reviewPlayers){
+    public void setPlayerReviewAmounts(ArrayList<ReviewPlayer> reviewPlayers){
         for(ReviewPlayer i: reviewPlayers){
             playerReviewIteration.put(i.getUniqueId(), plotFinalRatings.size() + 1);
         }

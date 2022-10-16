@@ -19,7 +19,11 @@ import com.plotsquared.core.plot.PlotArea;
 import com.plotsquared.core.plot.flag.GlobalFlagContainer;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import com.plotsquared.core.util.Permissions;
+import lombok.NonNull;
 import me.gleeming.command.CommandHandler;
+import net.megavex.scoreboardlibrary.ScoreboardLibraryImplementation;
+import net.megavex.scoreboardlibrary.api.ScoreboardManager;
+import net.megavex.scoreboardlibrary.exception.ScoreboardLibraryLoadException;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
@@ -28,13 +32,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.Objects;
 
-import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 public final class MCMEP2 extends JavaPlugin {
 
     private static MCMEP2 instance;
     private static PlotAPI plotAPI;
-    private static String plotWorld = "plotsquared";
+    private static ScoreboardManager scoreboardManager;
+    private static final String plotWorld = "yaa";
 
     private static File pluginDirectory;
     private static File reviewPlotDirectory;
@@ -57,6 +62,17 @@ public final class MCMEP2 extends JavaPlugin {
         GlobalFlagContainer.getInstance().addFlag(ReviewRatingDataFlag.REVIEW_RATING_DATA_FLAG_NONE);
         GlobalFlagContainer.getInstance().addFlag(ReviewTimeDataFlag.REVIEW_TIME_DATA_FLAG_NONE);
 
+        try {
+            ScoreboardLibraryImplementation.init();
+        } catch (ScoreboardLibraryLoadException e) {
+            // Couldn't load the library.
+            // Probably because the servers version is unsupported.
+            e.printStackTrace();
+            return;
+        }
+
+        scoreboardManager = ScoreboardManager.scoreboardManager(this);
+
         //data loading and making directories
         pluginDirectory = getDataFolder();
         if (!pluginDirectory.exists()) pluginDirectory.mkdir();
@@ -70,12 +86,12 @@ public final class MCMEP2 extends JavaPlugin {
                 file.delete();
             }
             else {
-            ReviewAPI.addReviewPlot(reviewPlot.getPlotId(), reviewPlot);
+                ReviewAPI.addReviewPlot(reviewPlot.getPlotId(), reviewPlot);
             }
         }
 
         getLogger().info("all files are loaded");
-        //initializes commands
+        //initialize commands
         CommandHandler.registerCommands("com.mcmiddleearth.plotsquared.command", this);
 
     }
@@ -86,6 +102,9 @@ public final class MCMEP2 extends JavaPlugin {
         for(ReviewParty i : ReviewAPI.getReviewParties().values()){
             i.stopReviewParty();
         }
+
+        scoreboardManager.close();
+        ScoreboardLibraryImplementation.close();
     }
 
     /**
@@ -141,13 +160,13 @@ public final class MCMEP2 extends JavaPlugin {
         return true;
     }
 
-
     public static MCMEP2 getInstance() {
         return instance;
     }
     public static PlotAPI getPlotAPI(){
         return plotAPI;
     }
+    public static ScoreboardManager getScoreboardManager() {return scoreboardManager;}
     public static String getPlotWorld() { return plotWorld; }
     public static File getReviewPlotDirectory(){ return reviewPlotDirectory; }
 }

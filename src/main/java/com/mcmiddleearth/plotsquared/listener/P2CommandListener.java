@@ -12,6 +12,8 @@ import com.plotsquared.core.plot.Plot;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+
 
 public class P2CommandListener {
 
@@ -40,7 +42,7 @@ public class P2CommandListener {
             for (Plot plot : playerClaimPlotEvent.getPlotPlayer().getPlots()) {
                 if (ReviewStatusFlag.isBeingReviewed(plot)) {
                     reviewPlayer.sendMessage(TranslatableCaption.of("permission.cant_claim_more_plots"),
-                            ReviewPlayer.templateOf("amount", String.valueOf(plotPlayer.getAllowedPlots())));
+                            templateOf("amount", String.valueOf(plotPlayer.getAllowedPlots())));
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.info.submit_to_get_more"));
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.info.submit_to_get_more_2"));
                     playerClaimPlotEvent.setEventResult(Result.DENY);
