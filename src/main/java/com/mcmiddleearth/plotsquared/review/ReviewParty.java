@@ -17,7 +17,7 @@ import java.util.*;
  */
 public class ReviewParty {
     private final ReviewPlayer LEADER;
-    private Sidebar sidebar;
+    Sidebar sidebar;
     private ArrayList<ReviewPlayer> partyReviewPlayers = new ArrayList<>();
     private LinkedList<ReviewPlot> reviewPlotLinkedList = new LinkedList<>();    //linked list of latest plots to be reviewed
     private HashSet<String> plotFeedbacks = new HashSet<>();
@@ -26,7 +26,7 @@ public class ReviewParty {
     public ReviewParty(ReviewPlayer leader) {
         this.LEADER = leader;
         //add all reviewplots which the leader hasn't reviewed
-        for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsCollection()){
+        for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsToBeReviewed()){
             if(!leader.hasAlreadyReviewed(reviewPlot)) reviewPlotLinkedList.add(reviewPlot);
         }
         //if any such plots are found add the leader and by that start the party
@@ -64,8 +64,10 @@ public class ReviewParty {
         ReviewPlot currentReviewPlot = this.reviewPlotLinkedList.pop();
         for (ReviewPlayer i : this.getReviewPlayers()){
             if(i.getPlotRating() != null) {
-                this.plotFeedbacks.add(i.getPlotFeedback());
                 this.plotRatings.add(i.getPlotRating());
+            }
+            if(i.getPlotFeedback() != null){
+                this.plotFeedbacks.add(i.getPlotFeedback());
             }
             i.clearRating();
             i.clearFeedback();
@@ -80,7 +82,7 @@ public class ReviewParty {
         }
         else {
             ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
-            updateScoreboard();
+//            updateScoreboard();
             for (ReviewPlayer i : this.getReviewPlayers()) {
                 i.teleportToReviewPlot(nextPlot);
             }
@@ -100,7 +102,7 @@ public class ReviewParty {
         this.partyReviewPlayers.add(reviewPlayer);
         partyReviewPlayers.sort(compareReviewPlayerName);
         reviewPlayer.setReviewParty(this);
-        updateScoreboard();
+//        updateScoreboard();
         reviewPlayer.teleportToReviewPlot(getCurrentReviewPlot());
     }
 
@@ -115,8 +117,13 @@ public class ReviewParty {
         if(reviewPlayer.isReviewPartyLeader()){
             this.stopReviewParty();
         }
+//        else updateScoreboard();
     }
 
+    /**
+     * Checks if everyone in the reviewparty has given feedback this plots review iteration now or previously
+     * @return true if everyone has given feedback this plot review iteration now or previously, false otherwise
+     */
     public boolean hasGivenFeedback() {
         boolean result = true;
         for(ReviewPlayer i : partyReviewPlayers){
@@ -127,31 +134,35 @@ public class ReviewParty {
         return result;
     }
 
-    public void updateScoreboard(){
-        ScoreboardManager scoreboardManager = MCMEP2.getScoreboardManager();
-        Sidebar sidebar = scoreboardManager.sidebar(this.getReviewPlayers().size());
-        sidebar.title(Component.text("Review Progress").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-        int counter = 0;
-        for (ReviewPlayer reviewPlayers: this.getReviewPlayers()) {
-            Player player = Bukkit.getPlayer(reviewPlayers.getUniqueId());
-            String reviewStatusSymbol = "❌";
-            NamedTextColor reviewSatusColor = NamedTextColor.RED;
-            if(reviewPlayers.hasAlreadyReviewed(getCurrentReviewPlot())){
-                reviewStatusSymbol = "✔";
-                reviewSatusColor = NamedTextColor.GREEN;
-            }
-            sidebar.line(counter,Component.text(reviewStatusSymbol + " ").color(reviewSatusColor).decoration(TextDecoration.BOLD, true)
-                    .append(Component.text(player.getName())).color(reviewSatusColor));
-            sidebar.addPlayer(player);
-            counter += 1;
-        }
-        if(this.getNextReviewPlot() == null) sidebar.line(counter+1, Component.text("No more plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-        else if(this.getReviewPlotLinkedList().size() == 2) sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plot left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-        else sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-        sidebar.visible(true);
-        this.sidebar = sidebar;
-    }
+//    public void updateScoreboard(){
+//        ScoreboardManager scoreboardManager = MCMEP2.getScoreboardManager();
+//        Sidebar sidebar = scoreboardManager.sidebar(this.getReviewPlayers().size());
+//        sidebar.title(Component.text("Review Progress").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+//        int counter = 0;
+//        for (ReviewPlayer reviewPlayers: this.getReviewPlayers()) {
+//            Player player = Bukkit.getPlayer(reviewPlayers.getUniqueId());
+//            String reviewStatusSymbol = "❌";
+//            NamedTextColor reviewSatusColor = NamedTextColor.RED;
+//            if(reviewPlayers.hasAlreadyReviewed(getCurrentReviewPlot())){
+//                reviewStatusSymbol = "✔";
+//                reviewSatusColor = NamedTextColor.GREEN;
+//            }
+//            sidebar.line(counter,Component.text(reviewStatusSymbol + " ").color(reviewSatusColor).decoration(TextDecoration.BOLD, true)
+//                    .append(Component.text(player.getName())).color(reviewSatusColor));
+//            sidebar.addPlayer(player);
+//            counter += 1;
+//        }
+//        if(this.getNextReviewPlot() == null) sidebar.line(counter+1, Component.text("No more plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+//        else if(this.getReviewPlotLinkedList().size() == 2) sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plot left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+//        else sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+//        sidebar.visible(true);
+//        this.sidebar = sidebar;
+//    }
 
+    /**
+     * Checks if everyone in the reviewparty has rated this plots review iteration now or previously
+     * @return true if everyone has rated the plot review iteration now or previously, false otherwise
+     */
     public boolean hasGivenRating() {
         boolean result = true;
         for(ReviewPlayer i : partyReviewPlayers){
