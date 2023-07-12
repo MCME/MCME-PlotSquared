@@ -1,4 +1,4 @@
-package com.mcmiddleearth.plotsquared.plotflag;
+package main.java.com.mcmiddleearth.plotsquared.plotflag;
 
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.plot.flag.FlagParseException;

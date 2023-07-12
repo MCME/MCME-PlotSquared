@@ -1,7 +1,8 @@
-package com.mcmiddleearth.plotsquared.review;
+package main.java.com.mcmiddleearth.plotsquared.review;
 
-import com.mcmiddleearth.plotsquared.MCMEP2;
 import com.plotsquared.core.plot.Plot;
+import main.java.com.mcmiddleearth.plotsquared.MCMEP2;
+import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -10,191 +11,136 @@ import net.megavex.scoreboardlibrary.api.sidebar.Sidebar;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.UUID;
 
 /**
  * A reviewParty consists of reviewPlayers.
  */
 public class ReviewParty {
     private final ReviewPlayer LEADER;
-    Sidebar sidebar;
-    private ArrayList<ReviewPlayer> partyReviewPlayers = new ArrayList<>();
-    private LinkedList<ReviewPlot> reviewPlotLinkedList = new LinkedList<>();    //linked list of latest plots to be reviewed
-    private HashSet<String> plotFeedbacks = new HashSet<>();
-    private HashSet<Integer> plotRatings = new HashSet<>();
+    private Sidebar sidebar;
+    private final ArrayList<ReviewPlayer> partyReviewPlayers = new ArrayList<>();
+    private final LinkedList<ReviewPlot> reviewPlots = new LinkedList<>();
 
-    public ReviewParty(ReviewPlayer leader) {
+    Comparator<ReviewPlayer> compareReviewPlayerName = Comparator.comparing(reviewPlayer -> Bukkit.getPlayer(reviewPlayer.getUniqueId()).getName());
+
+    private ReviewParty(ReviewPlayer leader) {
         this.LEADER = leader;
-        //add all reviewplots which the leader hasn't reviewed
-        for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsToBeReviewed()){
-            if(!leader.hasAlreadyReviewed(reviewPlot)) reviewPlotLinkedList.add(reviewPlot);
+        for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsToBeReviewed()) {
+            if (!reviewPlot.wasReviewedBy(leader)) reviewPlots.add(reviewPlot);
         }
-        //if any such plots are found add the leader and by that start the party
-        if(!reviewPlotLinkedList.isEmpty()) addReviewPlayer(leader);
+        if (!reviewPlots.isEmpty()) addReviewPlayer(leader);
     }
 
-    public static void startReviewParty(Player player){
-        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+    public static void startReviewParty(ReviewPlayer reviewPlayer) {
         ReviewParty reviewParty = new ReviewParty(reviewPlayer);
-        if(!reviewParty.reviewPlotLinkedList.isEmpty()) {
+        if (!reviewParty.reviewPlots.isEmpty()) {
             ReviewAPI.addReviewParty(reviewParty);
-            ReviewAPI.addReviewPlayer(reviewPlayer);
         }
     }
 
-    public void stopReviewParty(){
-        for (ReviewPlot i : reviewPlotLinkedList) {
-            i.endPlotReview(this);
+    public void stopReviewParty() {
+        while (!reviewPlots.isEmpty()) {
+            reviewPlots.pop().endPlotReview();
         }
-        for (ReviewPlayer i : this.getReviewPlayers()){
-            ReviewAPI.removeReviewPlayer(i);
+        for (ReviewPlayer reviewPlayer : this.getReviewPlayers()) {
+            reviewPlayer.leaveReviewParty();
         }
         this.sidebar.close();
         ReviewAPI.removeReviewParty(this);
     }
 
-    public void goCurrentPlot(){
-        ReviewPlot currentReviewPlot = this.reviewPlotLinkedList.getFirst();
-        for (ReviewPlayer i : this.getReviewPlayers()) {
-            i.teleportToReviewPlot(currentReviewPlot);
-        }
-    }
-
-    public void goNextPlot(){
-        ReviewPlot currentReviewPlot = this.reviewPlotLinkedList.pop();
-        for (ReviewPlayer i : this.getReviewPlayers()){
-            if(i.getPlotRating() != null) {
-                this.plotRatings.add(i.getPlotRating());
-            }
-            if(i.getPlotFeedback() != null){
-                this.plotFeedbacks.add(i.getPlotFeedback());
-            }
-            i.clearRating();
-            i.clearFeedback();
-        }
-        currentReviewPlot.endPlotReview(this);
-        this.clearFeedbacks();
-        this.clearRatings();
-
-        //check for any remaining plots
-        if(this.reviewPlotLinkedList.isEmpty()){
+    public void goNextPlot() {
+        this.getReviewPlayers().forEach((ReviewPlayer::submitReview));
+        reviewPlots.pop().endPlotReview();
+        if (reviewPlots.isEmpty()) {
             stopReviewParty();
-        }
-        else {
-            ReviewPlot nextPlot = this.reviewPlotLinkedList.getFirst();
-//            updateScoreboard();
-            for (ReviewPlayer i : this.getReviewPlayers()) {
-                i.teleportToReviewPlot(nextPlot);
-            }
+        } else {
+            updateScoreboard();
+            this.getReviewPlayers().forEach(ReviewPlayer::teleportToCurrentReviewPlot);
         }
     }
 
-    Comparator<ReviewPlayer> compareReviewPlayerName = new Comparator<ReviewPlayer>() {
-        @Override
-        public int compare(ReviewPlayer reviewPlayer1, ReviewPlayer reviewPlayer2) {
-            return Bukkit.getPlayer(reviewPlayer1.getUniqueId()).getName().compareTo(Bukkit.getPlayer(reviewPlayer2.getUniqueId()).getName());
-        }
-    };
+    public void addReviewPlayer(ReviewPlayer reviewPlayer) {
+        if (this.getReviewPlayers().size() > 14) return; // max reviewparty size is 14
 
-    public void addReviewPlayer(ReviewPlayer reviewPlayer){
-        if(this.getReviewPlayers().size() > 14) return; // max reviewparty size is 14
-        ReviewAPI.addReviewPlayer(reviewPlayer);
+        reviewPlayer.joinReviewParty(this);
         this.partyReviewPlayers.add(reviewPlayer);
         partyReviewPlayers.sort(compareReviewPlayerName);
-        reviewPlayer.setReviewParty(this);
-//        updateScoreboard();
-        reviewPlayer.teleportToReviewPlot(getCurrentReviewPlot());
+        updateScoreboard();
     }
 
-    public void removeReviewPlayer(ReviewPlayer reviewPlayer){
-        ReviewAPI.removeReviewPlayer(reviewPlayer);
+    public void removeReviewPlayer(ReviewPlayer reviewPlayer) {
+        reviewPlayer.leaveReviewParty();
         this.partyReviewPlayers.remove(reviewPlayer);
-        reviewPlayer.clearRating();
-        reviewPlayer.clearFeedback();
-        reviewPlayer.clearReviewParty();
         Player player = Bukkit.getPlayer(reviewPlayer.getUniqueId());
-        if(player != null) this.sidebar.removePlayer(player);
-        if(reviewPlayer.isReviewPartyLeader()){
+        if (player != null) this.sidebar.removePlayer(player);
+        if (reviewPlayer.isReviewPartyLeader()) {
             this.stopReviewParty();
         }
-//        else updateScoreboard();
+        else updateScoreboard();
     }
 
     /**
      * Checks if everyone in the reviewparty has given feedback this plots review iteration now or previously
      * @return true if everyone has given feedback this plot review iteration now or previously, false otherwise
      */
-    public boolean hasGivenFeedback() {
+    public boolean hasReviewed() {
         boolean result = true;
-        for(ReviewPlayer i : partyReviewPlayers){
-            if(!i.hasGivenFeedback()){
+        for (ReviewPlayer i : partyReviewPlayers) {
+            if (!i.hasReviewed()) {
                 result = false;
             }
         }
         return result;
     }
 
-//    public void updateScoreboard(){
-//        ScoreboardManager scoreboardManager = MCMEP2.getScoreboardManager();
-//        Sidebar sidebar = scoreboardManager.sidebar(this.getReviewPlayers().size());
-//        sidebar.title(Component.text("Review Progress").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-//        int counter = 0;
-//        for (ReviewPlayer reviewPlayers: this.getReviewPlayers()) {
-//            Player player = Bukkit.getPlayer(reviewPlayers.getUniqueId());
-//            String reviewStatusSymbol = "❌";
-//            NamedTextColor reviewSatusColor = NamedTextColor.RED;
-//            if(reviewPlayers.hasAlreadyReviewed(getCurrentReviewPlot())){
-//                reviewStatusSymbol = "✔";
-//                reviewSatusColor = NamedTextColor.GREEN;
-//            }
-//            sidebar.line(counter,Component.text(reviewStatusSymbol + " ").color(reviewSatusColor).decoration(TextDecoration.BOLD, true)
-//                    .append(Component.text(player.getName())).color(reviewSatusColor));
-//            sidebar.addPlayer(player);
-//            counter += 1;
-//        }
-//        if(this.getNextReviewPlot() == null) sidebar.line(counter+1, Component.text("No more plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-//        else if(this.getReviewPlotLinkedList().size() == 2) sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plot left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-//        else sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-//        sidebar.visible(true);
-//        this.sidebar = sidebar;
-//    }
-
-    /**
-     * Checks if everyone in the reviewparty has rated this plots review iteration now or previously
-     * @return true if everyone has rated the plot review iteration now or previously, false otherwise
-     */
-    public boolean hasGivenRating() {
-        boolean result = true;
-        for(ReviewPlayer i : partyReviewPlayers){
-            if(!i.hasGivenRating()){
-                result = false;
+    public void updateScoreboard(){
+        ScoreboardManager scoreboardManager = MCMEP2.getScoreboardLibrary();
+        Sidebar sidebar = scoreboardManager.sidebar(this.getReviewPlayers().size());
+        sidebar.title(Component.text("Review Progress").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+        int counter = 0;
+        for (ReviewPlayer reviewPlayers: this.getReviewPlayers()) {
+            Player player = Bukkit.getPlayer(reviewPlayers.getUniqueId());
+            String reviewStatusSymbol = "❌";
+            NamedTextColor reviewSatusColor = NamedTextColor.RED;
+            if(getCurrentReviewPlot().wasReviewedBy(reviewPlayers)){
+                reviewStatusSymbol = "✔";
+                reviewSatusColor = NamedTextColor.GREEN;
             }
+            sidebar.line(counter,Component.text(reviewStatusSymbol + " ").color(reviewSatusColor).decoration(TextDecoration.BOLD, true)
+                    .append(Component.text(player.getName())).color(reviewSatusColor));
+            sidebar.addPlayer(player);
+            counter += 1;
         }
-        return result;
+        if(this.getNextReviewPlot() == null) sidebar.line(counter+1, Component.text("No more plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+        else if(this.getReviewPlotLinkedList().size() == 2) sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plot left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+        else sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+        sidebar.visible(true);
+        this.sidebar = sidebar;
     }
 
-    public ReviewPlot getNextReviewPlot(){
-        if(reviewPlotLinkedList.size() <= 1) return null;
-        return this.reviewPlotLinkedList.get(1);
+    public ReviewPlot getCurrentReviewPlot() {
+        return reviewPlots.peek();
     }
 
-    private void clearRatings() {
-        this.plotRatings.clear();
+    public ReviewPlot getNextReviewPlot() {
+        if(reviewPlots.size() < 2) return null;
+        return  reviewPlots.get(1);
     }
 
-    private void clearFeedbacks() {
-        this.plotFeedbacks.clear();
+    public Plot getCurrentPlot() {
+        return reviewPlots.peek().getPlot();
     }
 
-    public ReviewPlot getCurrentReviewPlot(){
-        return reviewPlotLinkedList.getFirst();
+    public boolean hasReviewPlotsLeft() {
+        return reviewPlots.size() != 0;
     }
 
-    public Plot getCurrentPlot(){
-        return reviewPlotLinkedList.getFirst().getPlot();
-    }
-
-    public ReviewPlayer getReviewerLeader(){
+    public ReviewPlayer getReviewerLeader() {
         return LEADER;
     }
 
@@ -206,16 +152,8 @@ public class ReviewParty {
         return partyReviewPlayers;
     }
 
-    public HashSet<String> getFeedbacks() {
-        return plotFeedbacks;
-    }
-
-    public HashSet<Integer> getPlotRatings(){
-        return plotRatings;
-    }
-
-    public LinkedList<ReviewPlot> getReviewPlotLinkedList(){
-        return reviewPlotLinkedList;
+    public ArrayList<ReviewPlot> getReviewPlotLinkedList() {
+        return new ArrayList<>(reviewPlots);
     }
 
     public UUID getId() {

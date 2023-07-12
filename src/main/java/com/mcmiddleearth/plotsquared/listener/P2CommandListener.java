@@ -1,18 +1,17 @@
-package com.mcmiddleearth.plotsquared.listener;
+package main.java.com.mcmiddleearth.plotsquared.listener;
 
 import com.google.common.eventbus.Subscribe;
-import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import com.plotsquared.core.PlotAPI;
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.events.*;
 import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
+import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 
 public class P2CommandListener {
@@ -33,14 +32,15 @@ public class P2CommandListener {
         Player player = Bukkit.getPlayer(plotPlayer.getUUID());
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         int amountBeingReviewed = 0;
-        for(Plot plot : plotPlayer.getPlots()){
-            if(ReviewStatusFlag.isBeingReviewed(plot)) {
-                amountBeingReviewed =+ 1;
+        for (Plot plot : plotPlayer.getPlots()) {
+            if (ReviewAPI.getReviewPlot(plot).isBeingReviewed()) {
+                amountBeingReviewed += 1;
             }
         }
-        if(plotPlayer.getAllowedPlots() > plotPlayer.getPlotCount() + amountBeingReviewed) {
+        // allowed plots > total plots - accepted - being reviewed + being reviewed
+        if (plotPlayer.getAllowedPlots() > plotPlayer.getPlotCount() + amountBeingReviewed) {
             for (Plot plot : playerClaimPlotEvent.getPlotPlayer().getPlots()) {
-                if (ReviewStatusFlag.isBeingReviewed(plot)) {
+                if (ReviewAPI.getReviewPlot(plot).isBeingReviewed()) {
                     reviewPlayer.sendMessage(TranslatableCaption.of("permission.cant_claim_more_plots"),
                             templateOf("amount", String.valueOf(plotPlayer.getAllowedPlots())));
                     reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.info.submit_to_get_more"));
@@ -53,40 +53,37 @@ public class P2CommandListener {
     }
 
     @Subscribe
-    public void OnPlotClear(PlotClearEvent plotClearEvent){
+    public void OnPlotClear(PlotClearEvent plotClearEvent) {
         Plot plot = plotClearEvent.getPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(Bukkit.getPlayer(plotClearEvent.getPlot().getOwner()));
-        if (ReviewStatusFlag.isAccepted(plot)){
+        if (ReviewAPI.getReviewPlot(plot).isAccepted()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_accepted_edit"));
             plotClearEvent.setEventResult(Result.DENY);
             return;
         }
-        if(ReviewStatusFlag.isBeingReviewed(plot)){
+        if (ReviewAPI.getReviewPlot(plot).isBeingReviewed()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_being_reviewed_edit"));
             plotClearEvent.setEventResult(Result.DENY);
-            return;
-        }
-        else{
+        } else {
+            ReviewAPI.getReviewPlot(plot).reset();
             plotClearEvent.setEventResult(Result.ACCEPT);
         }
     }
 
     @Subscribe
-    public void onPlotDelete(PlotDeleteEvent plotDeleteEvent){
+    public void onPlotDelete(PlotDeleteEvent plotDeleteEvent) {
         Plot plot = plotDeleteEvent.getPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(Bukkit.getPlayer(plotDeleteEvent.getPlot().getOwner()));
-        if (ReviewStatusFlag.isAccepted(plot)){
+        if (ReviewAPI.getReviewPlot(plot).isAccepted()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_accepted_edit"));
             plotDeleteEvent.setEventResult(Result.DENY);
             return;
         }
-        if(ReviewStatusFlag.isBeingReviewed(plot)){
+        if (ReviewAPI.getReviewPlot(plot).isBeingReviewed()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.plot_being_reviewed_edit"));
             plotDeleteEvent.setEventResult(Result.DENY);
-            return;
-        }
-        else{
-            ReviewAPI.getReviewPlot(plot).deleteReview();
+        } else {
+            ReviewAPI.getReviewPlot(plot).reset();
             plotDeleteEvent.setEventResult(Result.ACCEPT);
         }
     }
