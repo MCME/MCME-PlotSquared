@@ -1,18 +1,18 @@
-package main.java.com.mcmiddleearth.plotsquared.review.plot;
+package com.mcmiddleearth.plotsquared.review.plot;
 
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotId;
 import com.plotsquared.core.plot.flag.PlotFlag;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
-import main.java.com.mcmiddleearth.plotsquared.MCMEP2;
-import main.java.com.mcmiddleearth.plotsquared.command.ReviewCommands;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatus;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer;
-import main.java.com.mcmiddleearth.plotsquared.util.FileManagement;
+import com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.command.ReviewCommands;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatus;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
+import com.mcmiddleearth.plotsquared.util.FileManagement;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 public class ReviewPlot implements Serializable {
     protected final String stringPlotId;

@@ -1,13 +1,13 @@
-package main.java.com.mcmiddleearth.plotsquared.util;
+package com.mcmiddleearth.plotsquared.util;
 
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import com.plotsquared.core.util.query.PlotQuery;
 import com.plotsquared.core.util.query.SortingStrategy;
-import main.java.com.mcmiddleearth.plotsquared.MCMEP2;
-import main.java.com.mcmiddleearth.plotsquared.command.ReviewCommands;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
+import com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.command.ReviewCommands;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Consumer;

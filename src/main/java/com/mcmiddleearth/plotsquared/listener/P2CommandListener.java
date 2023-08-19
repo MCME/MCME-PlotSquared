@@ -1,4 +1,4 @@
-package main.java.com.mcmiddleearth.plotsquared.listener;
+package com.mcmiddleearth.plotsquared.listener;
 
 import com.google.common.eventbus.Subscribe;
 import com.plotsquared.core.PlotAPI;
@@ -6,12 +6,12 @@ import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.events.*;
 import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 
 public class P2CommandListener {
@@ -37,7 +37,7 @@ public class P2CommandListener {
                 amountBeingReviewed += 1;
             }
         }
-        // allowed plots > total plots - accepted - being reviewed + being reviewed
+        // allowed plots > total plots (does not contain being reviewed plots as they have the done flag) + being reviewed
         if (plotPlayer.getAllowedPlots() > plotPlayer.getPlotCount() + amountBeingReviewed) {
             for (Plot plot : playerClaimPlotEvent.getPlotPlayer().getPlots()) {
                 if (ReviewAPI.getReviewPlot(plot).isBeingReviewed()) {
@@ -49,6 +49,9 @@ public class P2CommandListener {
                     return;
                 }
             }
+        }
+        else {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.info.submit_when_finished"));
         }
     }
 

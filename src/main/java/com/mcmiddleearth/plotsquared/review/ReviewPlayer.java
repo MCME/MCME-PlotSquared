@@ -1,11 +1,11 @@
-package main.java.com.mcmiddleearth.plotsquared.review;
+package com.mcmiddleearth.plotsquared.review;
 
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.configuration.caption.Caption;
 import com.plotsquared.core.events.TeleportCause;
 import com.plotsquared.core.player.PlotPlayer;
 import lombok.NonNull;
-import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
+import com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.examination.Examinable;
@@ -55,7 +55,7 @@ public class ReviewPlayer {
         }
     }
 
-    public boolean isReviewing() {
+    public boolean isInReviewParty() {
         return reviewParty != null;
     }
 

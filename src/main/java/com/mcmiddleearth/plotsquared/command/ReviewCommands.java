@@ -1,4 +1,4 @@
-package main.java.com.mcmiddleearth.plotsquared.command;
+package com.mcmiddleearth.plotsquared.command;
 
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.PlotSquared;
@@ -22,13 +22,13 @@ import dev.jorel.commandapi.annotations.Subcommand;
 import dev.jorel.commandapi.annotations.arguments.AGreedyStringArgument;
 import dev.jorel.commandapi.annotations.arguments.AIntegerArgument;
 import dev.jorel.commandapi.annotations.arguments.APlayerArgument;
-import main.java.com.mcmiddleearth.plotsquared.MCMEP2;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import main.java.com.mcmiddleearth.plotsquared.review.*;
-import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatus;
-import main.java.com.mcmiddleearth.plotsquared.util.FileManagement;
+import com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.review.*;
+import com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatus;
+import com.mcmiddleearth.plotsquared.util.FileManagement;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -42,34 +42,57 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI.ReviewCommands.*;
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI.commandConfirm;
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI.isToBeReviewed;
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewAPI.ReviewCommands.*;
+import static com.mcmiddleearth.plotsquared.review.ReviewAPI.commandConfirm;
+import static com.mcmiddleearth.plotsquared.review.ReviewAPI.isToBeReviewed;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 import static org.bukkit.Bukkit.getLogger;
 
 @Command("review")
 public class ReviewCommands {
     static final MiniMessage MINI_MESSAGE = MiniMessage.builder().build();
 
-    /**
-     * Start a ReviewParty.
-     * @param player
-     */
     @Subcommand("start")
     @Permission("mcmep2.review")
-    public static void reviewStart(Player player) {
-        ReviewAPI.startReviewParty(player);
+    public static void startReviewParty(Player player) {
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+        if (reviewPlayer.isInReviewParty()) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing"));
+            return;
+        }
+        if (ReviewAPI.getReviewPlotsToBeReviewed().isEmpty()) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.no_plots"));
+            return;
+        }
+        for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsToBeReviewed()) {
+            if (!reviewPlot.wasReviewedBy(reviewPlayer)) {
+                ReviewParty.startReviewParty(reviewPlayer);
+                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
+                return;
+            }
+        }
+        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
     }
 
-    /**
-     * End a ReviewParty.
-     * @param player
-     */
     @Subcommand("end")
     @Permission("mcmep2.review")
-    public static void reviewStop(Player player) {
-        ReviewAPI.stopReviewParty(player);
+    public static void stopReviewParty(Player player) {
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+        if (!reviewPlayer.isInReviewParty()) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
+            return;
+        }
+        if (!reviewPlayer.isReviewPartyLeader()) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_leader"));
+            return;
+        }
+        if (reviewPlayer.isReviewPartyLeader()) {
+            for (ReviewPlayer i : reviewPlayer.getReviewParty().getReviewPlayers()) {
+                i.sendMessage(TranslatableCaption.of("mcme.review.leader_left"));
+            }
+            reviewPlayer.getReviewParty().stopReviewParty();
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.end"));
+        }
     }
 
 //    @Command(names = {"review invite"}, playerOnly = true)
@@ -93,26 +116,31 @@ public class ReviewCommands {
 //        player.sendMessage("");
 //    }
 
-    /**
-     * Join a ReviewParty.
-     * @param player
-     * @param target
-     */
     @Subcommand("join")
     @Permission("mcmep2.review")
-    public static void reviewJoin(Player player, @APlayerArgument Player target) {
-        ReviewAPI.reviewJoin(player, target);
+    public static void joinReviewParty(Player player, @APlayerArgument Player target) {
+        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
+        ReviewPlayer reviewTarget = ReviewAPI.getReviewPlayer(target);
+        if (reviewPlayer.isInReviewParty()) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing"));
+            return;
+        }
+        if (!reviewTarget.isInReviewParty()) {
+            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing_other"));
+            return;
+        }
+        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.join")); //IMPLEMENT// TODO
+        for (ReviewPlayer i : reviewPlayer.getReviewParty().getReviewPlayers()) {
+            i.sendMessage(TranslatableCaption.of("mcme.review.joined_notif"), templateOf("player", player.getName())); //IMPLEMENT// TODO
+        }
+        reviewTarget.getReviewParty().addReviewPlayer(reviewPlayer);
     }
 
-    /**
-     * Leave a ReviewParty.
-     * @param player
-     */
     @Subcommand("leave")
     @Permission("mcmep2.review")
-    public static void reviewLeave(Player player) {
+    public static void leaveReviewParty(Player player) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!reviewPlayer.isReviewing()) {
+        if (!reviewPlayer.isInReviewParty()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
@@ -131,17 +159,12 @@ public class ReviewCommands {
         }
     }
 
-    /**
-     * Kick a target Player from your ReviewParty.
-     * @param player
-     * @param target
-     */
     @Subcommand("kick")
     @Permission("mcmep2.review")
-    public static void reviewKick(Player player, @APlayerArgument Player target) {
+    public static void kickFromReviewParty(Player player, @APlayerArgument Player target) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
         ReviewPlayer reviewTarget = ReviewAPI.getReviewPlayer(target);
-        if (!reviewPlayer.isReviewing()) {
+        if (!reviewPlayer.isInReviewParty()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
@@ -149,7 +172,7 @@ public class ReviewCommands {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_leader"));
             return;
         }
-        if (!reviewTarget.isReviewing() || reviewTarget.getReviewParty() != reviewPlayer.getReviewParty()) {
+        if (!reviewTarget.isInReviewParty() || reviewTarget.getReviewParty() != reviewPlayer.getReviewParty()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_in_party"));
             return;
         }
@@ -164,15 +187,11 @@ public class ReviewCommands {
         }
     }
 
-    /**
-     * Teleport to the current Plot.
-     * @param player
-     */
     @Subcommand("tp")
     @Permission("mcmep2.review")
     public static void reviewToPlot(Player player) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!reviewPlayer.isReviewing()) {
+        if (!reviewPlayer.isInReviewParty()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
@@ -188,7 +207,7 @@ public class ReviewCommands {
     @Permission("mcmep2.review")
     public static void reviewNext(Player player) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!reviewPlayer.isReviewing()) {
+        if (!reviewPlayer.isInReviewParty()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
@@ -223,7 +242,7 @@ public class ReviewCommands {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);
         Plot currentPlot = plotPlayer.getCurrentPlot();
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!reviewPlayer.isReviewing()) {
+        if (!reviewPlayer.isInReviewParty()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
@@ -264,10 +283,10 @@ public class ReviewCommands {
                 }
             }
             reviewPlayer.getReviewParty().goNextPlot();
-//            reviewPlayer.getReviewParty().updateScoreboard();
+            reviewPlayer.getReviewParty().updateScoreboard();
             return;
         }
-//        reviewPlayer.getReviewParty().updateScoreboard();
+        reviewPlayer.getReviewParty().updateScoreboard();
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.waiting"));
     }
 
@@ -280,7 +299,7 @@ public class ReviewCommands {
     @Permission("mcmep2.review")
     public static void reviewFeedback(Player player, @AGreedyStringArgument String feedback) {
         ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!reviewPlayer.isReviewing()) {
+        if (!reviewPlayer.isInReviewParty()) {
             reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
             return;
         }
@@ -315,10 +334,11 @@ public class ReviewCommands {
                 }
             }
             reviewPlayer.getReviewParty().goNextPlot();
-//            reviewPlayer.getReviewParty().updateScoreboard();
+            reviewPlayer.getReviewParty().updateScoreboard();
             return;
         }
         reviewPlayer.setFeedback(feedback);
+        reviewPlayer.getReviewParty().updateScoreboard();
         reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.waiting"));
     }
 
@@ -327,6 +347,7 @@ public class ReviewCommands {
      * @param player
      */
     @Subcommand("submit")
+    //TODO option between short review and long review (with or without feedback stage)
     @Permission("mcmep2.submit")
     public static void submitForRating(Player player) {
         PlotPlayer<?> plotPlayer = BukkitUtil.adapt(player);

@@ -1,15 +1,15 @@
-package main.java.com.mcmiddleearth.plotsquared.listener;
+package com.mcmiddleearth.plotsquared.listener;
 
-import main.java.com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.MCMEP2;
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewParty;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer;
-import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.ReviewParty;
+import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
+import com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Bukkit;
@@ -19,7 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 public class PlayerListener implements Listener {
 

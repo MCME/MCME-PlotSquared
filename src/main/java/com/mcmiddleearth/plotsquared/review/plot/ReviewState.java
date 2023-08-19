@@ -1,7 +1,7 @@
-package main.java.com.mcmiddleearth.plotsquared.review.plot;
+package com.mcmiddleearth.plotsquared.review.plot;
 
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewParty;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.ReviewParty;
 
 public abstract class ReviewState {
     protected ReviewPlot reviewPlot;

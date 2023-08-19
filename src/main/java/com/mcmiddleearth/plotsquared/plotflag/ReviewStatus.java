@@ -1,4 +1,4 @@
-package main.java.com.mcmiddleearth.plotsquared.plotflag;
+package com.mcmiddleearth.plotsquared.plotflag;
 
 public enum ReviewStatus {
     NOT_BEING_REVIEWED,  //PERMANENT FLAG

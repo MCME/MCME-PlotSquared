@@ -1,4 +1,4 @@
-package main.java.com.mcmiddleearth.plotsquared;
+package com.mcmiddleearth.plotsquared;
 
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.PlotAPI;
@@ -12,17 +12,19 @@ import com.plotsquared.core.plot.flag.GlobalFlagContainer;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
 import com.plotsquared.core.util.Permissions;
 import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIConfig;
-import main.java.com.mcmiddleearth.plotsquared.command.ReviewCommands;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewParty;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer;
-import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
-import main.java.com.mcmiddleearth.plotsquared.util.FileManagement;
-import net.megavex.scoreboardlibrary.api.ScoreboardManager;
+import com.mcmiddleearth.plotsquared.command.ReviewCommands;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.ReviewParty;
+import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
+import com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
+import com.mcmiddleearth.plotsquared.util.FileManagement;
+import dev.jorel.commandapi.CommandAPIBukkitConfig;
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
+import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
+import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
@@ -31,7 +33,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.Objects;
 
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 public final class MCMEP2 extends JavaPlugin {
 
@@ -40,11 +42,12 @@ public final class MCMEP2 extends JavaPlugin {
     private static final String plotWorld = "yaa";
     private static File pluginDirectory;
     private static File reviewPlotDirectory;
-    private static ScoreboardManager scoreboardManager;
+
+    private static ScoreboardLibrary scoreboardLibrary;
 
     @Override
     public void onLoad() {
-        CommandAPI.onLoad(new CommandAPIConfig().verboseOutput(true)); //Load with verbose output
+        CommandAPI.onLoad(new CommandAPIBukkitConfig(this).verboseOutput(true)); //Load with verbose output
     }
 
     @Override
@@ -56,8 +59,14 @@ public final class MCMEP2 extends JavaPlugin {
             getLogger().info("No PlotSquared detected!");
         }
 
+//        try {
+//            scoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
+//        } catch (NoPacketAdapterAvailableException e) {
+//            scoreboardLibrary = new NoopScoreboardLibrary();
+//        }
+
         PluginManager pm = this.getServer().getPluginManager();
-        pm.registerEvents(new main.java.com.mcmiddleearth.plotsquared.listener.PlayerListener(), this);
+        pm.registerEvents(new com.mcmiddleearth.plotsquared.listener.PlayerListener(), this);
 
         plotAPI = new PlotAPI();
         new ReviewAPI();
@@ -90,18 +99,9 @@ public final class MCMEP2 extends JavaPlugin {
             }
         }
         getLogger().info("all files are loaded");
-        scoreboardManager = ScoreboardManager.scoreboardManager(this);
-
-
-/*        try {
-            scoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(plugin);
-        } catch (NoPacketAdapterAvailableException e) {
-            // If no packet adapter was found, you can fallback to the no-op implementation:
-            scoreboardLibrary = new NoopScoreboardLibrary();
-        }*/
 
         //initialize commands//
-        CommandAPI.onEnable(this);
+        CommandAPI.onEnable();
         CommandAPI.registerCommand(ReviewCommands.class);
 
     }
@@ -113,8 +113,7 @@ public final class MCMEP2 extends JavaPlugin {
         for (ReviewParty i : ReviewAPI.getReviewParties().values()) {
             i.stopReviewParty();
         }
-//        scoreboardManager.close();
-//        ScoreboardLibraryImplementation.close();
+//        scoreboardLibrary.close();
     }
 
     /**
@@ -183,7 +182,7 @@ public final class MCMEP2 extends JavaPlugin {
         return plotWorld;
     }
 
-    public static ScoreboardManager getScoreboardLibrary(){return scoreboardManager;}
+    public static ScoreboardLibrary getScoreboardLibrary(){return scoreboardLibrary;}
 
     //    public static ScoreboardManager getScoreboardManager() {return scoreboardManager; }
     public static File getReviewPlotDirectory() {

@@ -1,12 +1,12 @@
-package main.java.com.mcmiddleearth.plotsquared.review;
+package com.mcmiddleearth.plotsquared.review;
 
 import com.plotsquared.core.plot.Plot;
-import main.java.com.mcmiddleearth.plotsquared.MCMEP2;
-import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
+import com.mcmiddleearth.plotsquared.MCMEP2;
+import com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.megavex.scoreboardlibrary.api.ScoreboardManager;
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.sidebar.Sidebar;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -99,8 +99,8 @@ public class ReviewParty {
     }
 
     public void updateScoreboard(){
-        ScoreboardManager scoreboardManager = MCMEP2.getScoreboardLibrary();
-        Sidebar sidebar = scoreboardManager.sidebar(this.getReviewPlayers().size());
+        ScoreboardLibrary scoreboardLibrary = MCMEP2.getScoreboardLibrary();
+        Sidebar sidebar = scoreboardLibrary.createSidebar(this.getReviewPlayers().size());
         sidebar.title(Component.text("Review Progress").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
         int counter = 0;
         for (ReviewPlayer reviewPlayers: this.getReviewPlayers()) {
@@ -119,7 +119,6 @@ public class ReviewParty {
         if(this.getNextReviewPlot() == null) sidebar.line(counter+1, Component.text("No more plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
         else if(this.getReviewPlotLinkedList().size() == 2) sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plot left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
         else sidebar.line(counter+1, Component.text(this.getReviewPlotLinkedList().size() -1 + " plots left.").color(NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
-        sidebar.visible(true);
         this.sidebar = sidebar;
     }
 

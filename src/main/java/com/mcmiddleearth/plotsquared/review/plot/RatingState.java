@@ -1,18 +1,18 @@
-package main.java.com.mcmiddleearth.plotsquared.review.plot;
+package com.mcmiddleearth.plotsquared.review.plot;
 
 import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer;
-import main.java.com.mcmiddleearth.plotsquared.util.FileManagement;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewRatingDataFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewTimeDataFlag;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
+import com.mcmiddleearth.plotsquared.util.FileManagement;
 import org.bukkit.Bukkit;
 
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 public class RatingState extends ReviewState {
 
@@ -23,13 +23,12 @@ public class RatingState extends ReviewState {
     private void endReview() {
         Plot plot = reviewPlot.getPlot();
         boolean ownerIsOnline = Bukkit.getOfflinePlayer(reviewPlot.getPlot().getOwner()).isOnline();
+        ReviewAPI.removeReviewPlot(reviewPlot);
         if (calculateRating() < 50) {
-            ReviewAPI.removeReviewPlot(reviewPlot);
             reviewPlot.allowBuilding();
             reviewPlot.plotFinalRatings.add(calculateRating());
             reviewPlot.plotFinalReviewTimeStamps.add(System.currentTimeMillis());
             reviewPlot.plotTempRatings.clear();
-            reviewPlot.plotFinalFeedback.clear();
             reviewPlot.saveToDisk();
             if (ownerIsOnline) {
                 reviewPlot.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
@@ -37,7 +36,6 @@ public class RatingState extends ReviewState {
             } else reviewPlot.getPlot().setFlag(ReviewStatusFlag.REJECTED_NOT_SEEN_FLAG);
         }
         else {
-            ReviewAPI.removeReviewPlot(reviewPlot);
             reviewPlot.blockBuilding();
             reviewPlot.plotFinalRatings.add(calculateRating());
             reviewPlot.plotFinalReviewTimeStamps.add(System.currentTimeMillis());

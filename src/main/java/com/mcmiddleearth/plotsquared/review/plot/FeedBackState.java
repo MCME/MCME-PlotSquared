@@ -1,11 +1,10 @@
-package main.java.com.mcmiddleearth.plotsquared.review.plot;
+package com.mcmiddleearth.plotsquared.review.plot;
 
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
-import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.flag.implementations.DoneFlag;
-import main.java.com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewAPI;
-import main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer;
+import com.mcmiddleearth.plotsquared.plotflag.ReviewStatusFlag;
+import com.mcmiddleearth.plotsquared.review.ReviewAPI;
+import com.mcmiddleearth.plotsquared.review.ReviewPlayer;
 import org.bukkit.Bukkit;
 
 public class FeedBackState extends ReviewState {
@@ -18,6 +17,7 @@ public class FeedBackState extends ReviewState {
         ReviewAPI.removeReviewPlot(reviewPlot);
         reviewPlot.allowBuilding();
         reviewPlot.saveToDisk();
+        reviewPlot.plotFinalReviewTimeStamps.add(System.currentTimeMillis());
         if (ownerIsOnline) {
             reviewPlot.getPlot().setFlag(ReviewStatusFlag.NOT_BEING_REVIEWED_FLAG);
             sendFeedbackDoneMessage();

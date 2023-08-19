@@ -1,16 +1,16 @@
-package main.java.com.mcmiddleearth.plotsquared.review;
+package com.mcmiddleearth.plotsquared.review;
 
 import com.plotsquared.core.configuration.caption.TranslatableCaption;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotId;
-import main.java.com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
+import com.mcmiddleearth.plotsquared.review.plot.ReviewPlot;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
 
-import static main.java.com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
+import static com.mcmiddleearth.plotsquared.review.ReviewPlayer.Template.templateOf;
 
 public class ReviewAPI {
     private static HashMap<UUID, ReviewPlayer> reviewerPlayers = new HashMap<>();
@@ -44,58 +44,6 @@ public class ReviewAPI {
         public Plot getStoredPlot() {
             return storedPlot;
         }
-    }
-
-    public static void startReviewParty(Player player) {
-        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (reviewPlayer.isReviewing()) {
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing"));
-            return;
-        }
-        if (ReviewAPI.getReviewPlotsToBeReviewed().isEmpty()) {
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.no_plots"));
-            return;
-        }
-        for (ReviewPlot reviewPlot : ReviewAPI.getReviewPlotsToBeReviewed()) {
-            if (!reviewPlot.wasReviewedBy(reviewPlayer)) {
-                ReviewParty.startReviewParty(reviewPlayer);
-                reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.start"));
-                return;
-            }
-        }
-        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.reviewed_all_plots"));
-    }
-
-    public static void stopReviewParty(Player player) {
-        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        if (!reviewPlayer.isReviewing()) {
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_reviewing"));
-            return;
-        }
-        if (!reviewPlayer.isReviewPartyLeader()) {
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.not_leader"));
-            return;
-        }
-        reviewPlayer.getReviewParty().stopReviewParty();
-        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.end"));
-    }
-
-    public static void reviewJoin(Player player, Player target) {
-        ReviewPlayer reviewPlayer = ReviewAPI.getReviewPlayer(player);
-        ReviewPlayer reviewTarget = ReviewAPI.getReviewPlayer(target);
-        if (reviewPlayer.isReviewing()) {
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing"));
-            return;
-        }
-        if (!reviewTarget.isReviewing()) {
-            reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.error.already_reviewing_other"));
-            return;
-        }
-        reviewPlayer.sendMessage(TranslatableCaption.of("mcme.review.join")); //IMPLEMENT// TODO
-        for (ReviewPlayer i : reviewPlayer.getReviewParty().getReviewPlayers()) {
-            i.sendMessage(TranslatableCaption.of("mcme.review.joined_notif"), templateOf("player", player.getName())); //IMPLEMENT// TODO
-        }
-        reviewTarget.getReviewParty().addReviewPlayer(reviewPlayer);
     }
 
     public static HashMap<UUID, ReviewPlayer> getReviewerPlayers() {
